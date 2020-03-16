@@ -2,7 +2,10 @@
 
 Qiscus Chat SDK Sample
 
-## Getting Started
+## How to Run
+`flutter run`
+
+## Getting Started with Flutter
 
 This project is a starting point for a Flutter application.
 
