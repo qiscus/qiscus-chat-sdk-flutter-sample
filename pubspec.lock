@@ -175,7 +175,7 @@ packages:
       name: dartz
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "0.9.0-dev.6"
+    version: "0.8.9"
   dio:
     dependency: transitive
     description:
@@ -228,6 +228,13 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "3.1.3"
+  get_it:
+    dependency: transitive
+    description:
+      name: get_it
+      url: "https://pub.dartlang.org"
+    source: hosted
+    version: "4.0.0"
   glob:
     dependency: transitive
     description:
@@ -277,6 +284,13 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "2.1.4"
+  injectable:
+    dependency: transitive
+    description:
+      name: injectable
+      url: "https://pub.dartlang.org"
+    source: hosted
+    version: "0.3.0"
   io:
     dependency: transitive
     description:
@@ -417,13 +431,6 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "1.4.0"
-  pretty_dio_logger:
-    dependency: transitive
-    description:
-      name: pretty_dio_logger
-      url: "https://pub.dartlang.org"
-    source: hosted
-    version: "1.1.1"
   provider:
     dependency: "direct main"
     description:
@@ -448,10 +455,12 @@ packages:
   qiscus_chat_sdk:
     dependency: "direct main"
     description:
-      path: "../qiscus_chat_sdk_dart"
-      relative: true
-    source: path
-    version: "0.1.0"
+      path: "."
+      ref: HEAD
+      resolved-ref: "8c8a428722a380416c335fba249bf1a1b4e5d69e"
+      url: "git://github.com/qiscus/qiscus-chat-sdk-flutter.git"
+    source: git
+    version: "0.0.1"
   quiver:
     dependency: transitive
     description:
