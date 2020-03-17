@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import 'package:mobx/mobx.dart';
-import 'package:qiscus_chat_sdk/extensions.dart';
 import 'package:qiscus_chat_sdk/qiscus_chat_sdk.dart';
 
 part 'app_state.g.dart';
@@ -22,7 +21,9 @@ abstract class AppStateBase with Store {
 
   @action
   Future<void> setup(String appId) {
-    return qiscusSdk.setup$(appId);
+    var completer = Completer<void>();
+    qiscusSdk.setup(appId, callback: (_) => completer.complete());
+    return completer.future;
   }
 
   @action
