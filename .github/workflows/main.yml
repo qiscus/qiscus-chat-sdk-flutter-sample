@@ -20,4 +20,5 @@ jobs:
         with:
           artifacts: "build/app/outputs/apk/debug/*.apk"
           token: ${{ secrets.TOKEN }}
-          commit: $GITHUB_SHA
+          commit: ${GITHUB_SHA::8}
+          tag: ${GITHUB_SHA::8}
