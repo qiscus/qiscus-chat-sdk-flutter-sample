@@ -12,17 +12,13 @@ class ChatBubble extends StatelessWidget {
     return Container(
       padding: EdgeInsets.symmetric(vertical: 5),
       child: DecoratedBox(
-        decoration: BoxDecoration(
-          color: Colors.teal[50],
-        ),
+        decoration: BoxDecoration(color: Colors.white),
         child: Container(
           height: 40,
           child: Row(children: <Widget>[
             Text(
               '${message.sender.name}:',
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-              ),
+              style: TextStyle(fontWeight: FontWeight.bold),
             ),
             Container(width: 10),
             Text(message.text),
@@ -40,11 +36,12 @@ class ChatBubble extends StatelessWidget {
       case QMessageStatus.sending:
         return Icon(Icons.import_export, size: size);
       case QMessageStatus.read:
-        return Icon(Icons.done_all);
+        return Icon(Icons.done_all, size: size, color: Colors.green[400]);
       case QMessageStatus.delivered:
+        return Icon(Icons.done, size: size, color: Colors.green[400]);
       case QMessageStatus.sent:
       default:
-        return Icon(Icons.done);
+      return Icon(Icons.done, size: size);
     }
   }
 }

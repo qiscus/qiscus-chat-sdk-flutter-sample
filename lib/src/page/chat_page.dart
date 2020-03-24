@@ -1,11 +1,9 @@
 import 'dart:async';
 
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_mobx/flutter_mobx.dart';
+import 'package:flutter/widgets.dart';
 import 'package:provider/provider.dart';
-import 'package:qiscus_chat_sample/src/state/message_state.dart';
-import 'package:qiscus_chat_sample/src/state/room_state.dart';
+import 'package:qiscus_chat_sample/src/state/state.dart';
 import 'package:qiscus_chat_sample/src/widget/chat_bubble.dart';
 
 class ChatPage extends StatefulWidget {
@@ -41,7 +39,6 @@ class _ChatState extends State<ChatPage> {
   }
 
   Widget buildAppBar(BuildContext context) {
-    var roomState = Provider.of<RoomState>(context);
     return AppBar(
       centerTitle: false,
       elevation: 0,
@@ -54,12 +51,13 @@ class _ChatState extends State<ChatPage> {
           Navigator.of(context).pushReplacementNamed('/login');
         },
       ),
-      title: Observer(
-        builder: (_) {
-          if (roomState.currentRoom == null)
+      title: Consumer<RoomState>(
+        builder: (_, state, __) {
+          if (state.currentRoom == null) {
             return Text('Loading...');
-          else
-            return Text(roomState.currentRoom.name);
+          } else {
+            return Text(state.currentRoom.name);
+          }
         },
       ),
     );
@@ -113,13 +111,12 @@ class _ChatState extends State<ChatPage> {
   }
 
   Widget _messageList(BuildContext ctx) {
-    var messageState = Provider.of<MessageState>(ctx, listen: false);
     return Expanded(
-      child: Observer(
-        builder: (_) {
-          var reversed = messageState.messages.reversed;
+      child: Consumer<MessageState>(
+        builder: (_, state, __) {
+          var reversed = state.messages.reversed;
           return ListView.builder(
-            itemCount: messageState.messages.length,
+            itemCount: state.messages.length,
             itemBuilder: (ctx, id) {
               var message = reversed.elementAt(id);
               return ChatBubble(message: message);

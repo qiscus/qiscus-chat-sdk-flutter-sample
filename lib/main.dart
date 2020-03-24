@@ -26,9 +26,9 @@ class _MyAppState extends State<MyApp> {
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
-        Provider<AppState>(create: (_) => _appState),
-        Provider<MessageState>(create: (_) => _messageState),
-        Provider<RoomState>(create: (_) => _roomState),
+        ChangeNotifierProvider.value(value: _appState),
+        ChangeNotifierProvider.value(value: _roomState),
+        ChangeNotifierProvider.value(value: _messageState),
       ],
       child: MaterialApp(
         title: 'Flutter Demo',

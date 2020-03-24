@@ -114,10 +114,7 @@ class _LoginState extends State<LoginPage> {
       var target = _targetController.text;
 
       await appState.setup(appId);
-      await appState.setUser(
-        userId: userId,
-        userKey: userKey,
-      );
+      await appState.setUser(userId, userKey);
       var room = await roomState.getRoomWithUser(userId: target);
 
       Navigator.of(context).pushReplacementNamed('/', arguments: room.id);

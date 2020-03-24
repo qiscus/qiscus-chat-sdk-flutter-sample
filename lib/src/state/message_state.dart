@@ -1,18 +1,13 @@
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
-import 'package:mobx/mobx.dart';
 import 'package:qiscus_chat_sample/src/state/room_state.dart';
 import 'package:qiscus_chat_sdk/qiscus_chat_sdk.dart';
 
 import 'app_state.dart';
 
-part 'message_state.g.dart';
-
-class MessageState = MessageStateBase with _$MessageState;
-
-abstract class MessageStateBase with Store {
-  MessageStateBase({
+class MessageState extends ChangeNotifier {
+  MessageState({
     @required this.appState,
     @required this.roomState,
   });
@@ -20,12 +15,17 @@ abstract class MessageStateBase with Store {
   final AppState appState;
   final RoomState roomState;
 
-  QiscusSDK get _qiscusSDK => appState.qiscusSdk;
+  QiscusSDK get qiscus => appState.qiscus;
 
-  @observable
-  ObservableList<QMessage> messages = ObservableList.of([]);
+  List<QMessage> _messages = <QMessage>[];
 
-  @action
+  set messages(List<QMessage> messages) {
+    _messages = messages;
+    notifyListeners();
+  }
+
+  List<QMessage> get messages => _messages;
+
   Future<QMessage> submit({
     @required int roomId,
     @required String message,
@@ -33,22 +33,25 @@ abstract class MessageStateBase with Store {
     var nextMessage = QMessage.create(
       text: message,
       chatRoomId: roomId,
-      sender: appState.currentUser.asUser(),
+      sender: appState.account.asUser(),
     );
     this.messages.insert(0, nextMessage);
+    notifyListeners();
+
     var completer = Completer<QMessage>();
 
-    _qiscusSDK.sendMessage(
+    qiscus.sendMessage(
       message: nextMessage,
       callback: (message, error) {
         if (error != null) return completer.completeError(error);
 
-        var index = this.messages.indexWhere(
-              (m) => m.uniqueId == nextMessage.uniqueId,
-            );
-        this.messages.removeAt(index);
-        this.messages.insert(index, message);
-//        this.messages[index] = message;
+        var index = this
+            .messages //
+            .indexWhere((m) => m.uniqueId == nextMessage.uniqueId);
+        this.messages[index] = message;
+        notifyListeners();
+        // this.messages.removeAt(index);
+        // this.messages.insert(index, message);
 
         completer.complete(message);
       },
@@ -56,10 +59,9 @@ abstract class MessageStateBase with Store {
     return completer.future;
   }
 
-  @action
   Future<List<QMessage>> getAllMessage(int roomId) async {
     var completer = Completer<List<QMessage>>();
-    _qiscusSDK.getNextMessagesById(
+    qiscus.getNextMessagesById(
       roomId: roomId,
       messageId: 0,
       limit: 10,
@@ -70,6 +72,7 @@ abstract class MessageStateBase with Store {
         } else {
           this.messages.clear();
           this.messages.addAll(messages);
+          notifyListeners();
 
           completer.complete(messages);
         }
@@ -79,13 +82,12 @@ abstract class MessageStateBase with Store {
     return completer.future;
   }
 
-  @action
   void subscribeChatRoom({void Function() messageReceivedCallback}) {
-    _qiscusSDK.subscribeChatRoom(roomState.currentRoom);
-    _qiscusSDK.onMessageDelivered((msg) {
+    qiscus.subscribeChatRoom(roomState.currentRoom);
+    qiscus.onMessageDelivered((msg) {
       print('on message delivered: $msg');
     });
-    _qiscusSDK.onMessageRead((msg) {
+    qiscus.onMessageRead((msg) {
       print('on message read: $msg ${msg.uniqueId}');
       // Find a better way to update list item
       // and update previous messages which are not read.
@@ -93,20 +95,25 @@ abstract class MessageStateBase with Store {
 
       var message = this.messages.elementAt(index);
       message.status = QMessageStatus.read;
-      this.messages.removeAt(index);
-      this.messages.insert(index, message);
+      this.messages[index] = message;
+      // this.messages.removeAt(index);
+      // this.messages.insert(index, message);
+      notifyListeners();
     });
-    _qiscusSDK.onMessageReceived((msg) {
+    qiscus.onMessageReceived((msg) {
       print('on message received: $msg ${msg.uniqueId}');
       messageReceivedCallback?.call();
       var index = this.messages.indexWhere((m) => m.uniqueId == msg.uniqueId);
       if (index == -1) {
         this.messages.insert(0, msg);
+        notifyListeners();
       }
     });
   }
 
+  @override
   dispose() {
+    super.dispose();
     this.messages.clear();
   }
 }

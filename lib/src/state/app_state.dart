@@ -1,45 +1,47 @@
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
-import 'package:mobx/mobx.dart';
 import 'package:qiscus_chat_sdk/qiscus_chat_sdk.dart';
 
-part 'app_state.g.dart';
+class AppState extends ChangeNotifier {
+  AppState();
 
-class AppState = AppStateBase with _$AppState;
+  final qiscus = QiscusSDK();
 
-abstract class AppStateBase with Store {
-  final qiscusSdk = QiscusSDK();
+  QAccount _account;
 
-  @observable
-  QAccount currentUser;
+  set account(QAccount account) {
+    _account = account;
+    notifyListeners();
+  }
 
-  @computed
-  bool get isLoggedIn => currentUser != null;
-  @computed
-  String get userId => currentUser?.id ?? 'null';
+  QAccount get account => _account;
 
-  @action
+  bool get isLoggedIn => account != null;
+
+  String get userId => account?.id;
+
   Future<void> setup(String appId) {
     var completer = Completer<void>();
-    qiscusSdk.setup(appId, callback: (_) => completer.complete());
+    qiscus.setup(appId, callback: (error) {
+      if (error != null)
+        completer.completeError(error);
+      else
+        completer.complete();
+    });
     return completer.future;
   }
 
-  @action
-  Future<QAccount> setUser({
-    @required String userId,
-    @required String userKey,
-  }) {
+  Future<QAccount> setUser(String userId, String userKey) {
     var completer = Completer<QAccount>();
-    qiscusSdk.setUser(
+    qiscus.setUser(
       userId: userId,
       userKey: userKey,
       callback: (user, error) {
         if (error != null) {
           completer.completeError(error);
         } else {
-          this.currentUser = user;
+          this.account = user;
           completer.complete(user);
         }
       },
