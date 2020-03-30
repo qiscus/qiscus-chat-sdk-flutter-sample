@@ -32,10 +32,10 @@ dependencies:
   freezed_annotation:
   fluro: ^1.6.1
   qiscus_chat_sdk:
-    path: ../qiscus-chat-sdk-flutter
-  #    git:
-  #      url: git://github.com/qiscus/qiscus-chat-sdk-flutter.git
-  #      ref: master
+#    path: ../qiscus-chat-sdk-flutter
+    git:
+      url: git://github.com/qiscus/qiscus-chat-sdk-flutter.git
+      ref: master
   flutter:
     sdk: flutter
 
