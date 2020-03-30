@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:qiscus_chat_sample/src/state/room_state.dart';
@@ -50,10 +51,28 @@ class MessageState extends ChangeNotifier {
             .indexWhere((m) => m.uniqueId == nextMessage.uniqueId);
         this.messages[index] = message;
         notifyListeners();
-        // this.messages.removeAt(index);
-        // this.messages.insert(index, message);
 
         completer.complete(message);
+      },
+    );
+    return completer.future;
+  }
+
+  /// Load more
+  Future<List<QMessage>> getPreviousMessage(int roomId) async {
+    var completer = Completer<List<QMessage>>();
+    qiscus.getPreviousMessagesById(
+      roomId: roomId,
+      messageId: this.messages.last.id,
+      callback: (List<QMessage> messages, Exception error) {
+        if (error != null) return completer.completeError(error);
+
+        this.messages.addAll(messages);
+
+        Future.delayed(const Duration(seconds: 2), () {
+          completer.complete(messages);
+          notifyListeners();
+        });
       },
     );
     return completer.future;
@@ -83,21 +102,24 @@ class MessageState extends ChangeNotifier {
   }
 
   void subscribeChatRoom({void Function() messageReceivedCallback}) {
-    qiscus.subscribeChatRoom(roomState.currentRoom);
     qiscus.onMessageDelivered((msg) {
-      print('on message delivered: $msg');
+      for (var message in this.messages) {
+        if (message.id <= msg.id && message.status != QMessageStatus.read) {
+          message.status = QMessageStatus.delivered;
+          var index = this.messages.indexOf(message);
+          this.messages[index] = message;
+        }
+      }
+      notifyListeners();
     });
     qiscus.onMessageRead((msg) {
-      print('on message read: $msg ${msg.uniqueId}');
-      // Find a better way to update list item
-      // and update previous messages which are not read.
-      var index = this.messages.indexWhere((m) => m.uniqueId == msg.uniqueId);
-
-      var message = this.messages.elementAt(index);
-      message.status = QMessageStatus.read;
-      this.messages[index] = message;
-      // this.messages.removeAt(index);
-      // this.messages.insert(index, message);
+      for (var message in this.messages) {
+        if (message.id <= msg.id) {
+          message.status = QMessageStatus.read;
+          var index = this.messages.indexOf(message);
+          this.messages[index] = message;
+        }
+      }
       notifyListeners();
     });
     qiscus.onMessageReceived((msg) {
@@ -111,9 +133,37 @@ class MessageState extends ChangeNotifier {
     });
   }
 
+  Future<void> sendFile(File file) async {
+    var completer = Completer<void>();
+    var message = QMessage.createAttachment(
+      text: 'attachment',
+      chatRoomId: roomState.currentRoomId,
+      sender: appState.account.asUser(),
+      file: file,
+    );
+    qiscus.sendFileMessage(
+      message: message,
+      file: file,
+      callback: (error, progress, message) {
+        if (error != null) return completer.completeError(error);
+        if (progress != null) return print('progress: $progress');
+
+        message.status = QMessageStatus.sent;
+        this.messages.insert(0, message);
+        notifyListeners();
+        completer.complete();
+      },
+    );
+    return completer.future;
+  }
+
   @override
   dispose() {
     super.dispose();
     this.messages.clear();
   }
+}
+
+class MessageActions {
+  //
 }

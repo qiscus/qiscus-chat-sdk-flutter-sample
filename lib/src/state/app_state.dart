@@ -23,12 +23,7 @@ class AppState extends ChangeNotifier {
 
   Future<void> setup(String appId) {
     var completer = Completer<void>();
-    qiscus.setup(appId, callback: (error) {
-      if (error != null)
-        completer.completeError(error);
-      else
-        completer.complete();
-    });
+    qiscus.setup(appId, callback: (_) => completer.complete());
     return completer.future;
   }
 
@@ -37,13 +32,10 @@ class AppState extends ChangeNotifier {
     qiscus.setUser(
       userId: userId,
       userKey: userKey,
-      callback: (user, error) {
-        if (error != null) {
-          completer.completeError(error);
-        } else {
-          this.account = user;
-          completer.complete(user);
-        }
+      callback: (account, error) {
+        if (error != null) return completer.completeError(error);
+        this.account = account;
+        return completer.complete(account);
       },
     );
     return completer.future;

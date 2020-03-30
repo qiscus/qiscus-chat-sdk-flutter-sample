@@ -1,40 +1,97 @@
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:qiscus_chat_sample/src/state/state.dart';
 import 'package:qiscus_chat_sdk/qiscus_chat_sdk.dart';
+import 'package:timeago/timeago.dart' as timeago;
 
-class AppBar extends StatelessWidget {
-  AppBar({
-    @required this.room,
-  }) : assert(room != null);
+String getParticipantText(List<QParticipant> participants) {
+  var limit = 2;
+  var count = participants.length - limit;
+  var _participants = participants //
+      .take(limit)
+      .map((p) => p.name.split(' ')?.first ?? '')
+      .toList();
+  if (participants.length <= limit) return _participants.join(', ');
+  _participants.add('and $count others.');
+  return _participants.join(', ');
+}
+
+AppBar appBar({
+  @required QChatRoom room,
+  @required void Function() onBack,
+}) {
+  return AppBar(
+    leading: FlatButton(
+      onPressed: onBack,
+      child: Icon(
+        Icons.chevron_left,
+        color: Colors.white,
+        size: 34,
+      ),
+    ),
+    centerTitle: false,
+    title: Container(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.start,
+        children: <Widget>[
+          Image.network(
+            room.avatarUrl,
+            fit: BoxFit.fill,
+            height: 34,
+            width: 34,
+          ),
+          Padding(
+            padding: const EdgeInsets.only(left: 20.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Text(room.name, style: TextStyle(fontSize: 18)),
+                Consumer<RoomState>(
+                  builder: (_, state, __) {
+                    return MultiProvider(
+                      providers: [
+                        StreamProvider.value(value: state.onTyping),
+                        StreamProvider.value(value: state.onPresence),
+                      ],
+                      child: AppBarStatus(room: room),
+                    );
+                  },
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    ),
+  );
+}
+
+class AppBarStatus extends StatelessWidget {
+  AppBarStatus({@required this.room});
 
   final QChatRoom room;
 
-  String get name => room.name;
-
-  QRoomType get type => room.type;
-
-  List<QParticipant> get participants {
-    if (type == QRoomType.group) return room.participants;
-    return [];
-  }
-
-  String get participantText {
-    var p = participants.map((p) => p.name);
-    var length = p.length;
-    var visibleLength = 2;
-
-    var res = p.take(visibleLength).join(', ');
-    var remainingLength = length - visibleLength;
-    if (remainingLength > 0) {
-      res += 'and $remainingLength others';
-    } else {
-      res += '.';
-    }
-
-    return res;
-  }
+  static const fontStyle = TextStyle(fontSize: 13.0);
 
   @override
   Widget build(BuildContext context) {
-    return Container();
+    if (room.type == QRoomType.single) {
+      return Consumer2<Typing, Online>(
+        builder: (_, typing, presence, __) {
+          if (typing != null && typing.isTyping && typing.roomId == room.id) {
+            return Text('Typing...', style: fontStyle);
+          } else if (presence != null && !presence.isOnline) {
+            var lastOnline = timeago.format(presence.lastOnline);
+            return Text('Last online $lastOnline', style: fontStyle);
+          } else {
+            return Text('Online', style: fontStyle);
+          }
+        },
+      );
+    } else {
+      return Text(getParticipantText(room.participants), style: fontStyle);
+    }
   }
 }

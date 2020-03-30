@@ -9,23 +9,24 @@ class ChatBubble extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: EdgeInsets.symmetric(vertical: 5),
-      child: DecoratedBox(
-        decoration: BoxDecoration(color: Colors.white),
-        child: Container(
-          height: 40,
-          child: Row(children: <Widget>[
-            Text(
-              '${message.sender.name}:',
-              style: TextStyle(fontWeight: FontWeight.bold),
-            ),
-            Container(width: 10),
-            Text(message.text),
-            Spacer(),
-            _buildStatus(message.status),
-          ]),
-        ),
+    return ListTile(
+      leading: CircleAvatar(
+        backgroundImage: Image.network(
+          message.sender.avatarUrl,
+          fit: BoxFit.cover,
+        ).image,
+      ),
+      title: Text(message.sender.name),
+      subtitle: Stack(
+        children: <Widget>[
+          if (message.type == QMessageType.text) Text(message.text),
+          if (message.type == QMessageType.attachment)
+            _buildAttachment(message.payload['url']),
+          Container(
+            alignment: Alignment.bottomRight,
+            child: _buildStatus(message.status),
+          ),
+        ],
       ),
     );
   }
@@ -38,10 +39,23 @@ class ChatBubble extends StatelessWidget {
       case QMessageStatus.read:
         return Icon(Icons.done_all, size: size, color: Colors.green[400]);
       case QMessageStatus.delivered:
-        return Icon(Icons.done, size: size, color: Colors.green[400]);
+        return Icon(Icons.done_all, size: size, color: Colors.black26);
       case QMessageStatus.sent:
       default:
-      return Icon(Icons.done, size: size);
+        return Icon(Icons.done, size: size);
     }
   }
+
+  Widget _buildAttachment(String url) {
+    return Container(
+      child: Image.network(
+        url,
+        width: 200,
+        height: 130,
+      ),
+    );
+  }
+
+  String _getThumbnailUrl(String url) =>
+      url.replaceAll(r'/upload/', '/upload/w_30,c_scale/');
 }
