@@ -31,6 +31,7 @@ dependencies:
   redux_thunk: ^0.3.0
   freezed_annotation:
   fluro: ^1.6.1
+  date_format: ^1.0.8
   qiscus_chat_sdk:
     path: ../qiscus-chat-sdk-flutter
   #    git:

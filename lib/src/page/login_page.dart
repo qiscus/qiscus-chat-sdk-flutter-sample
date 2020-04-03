@@ -117,12 +117,11 @@ class _LoginState extends State<LoginPage> {
 
       await appState.setup(appId);
       await appState.setUser(userId, userKey);
-      var room = await roomState.getRoomWithUser(userId: target);
 
       setState(() {
         isLoggingIn = false;
       });
-      Navigator.pushReplacementNamed(context, '/room/${room.id}');
+      Navigator.pushReplacementNamed(context, '/room');
     }
   }
 }

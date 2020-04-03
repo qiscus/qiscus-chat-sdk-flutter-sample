@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:collection';
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
@@ -18,14 +19,15 @@ class MessageState extends ChangeNotifier {
 
   QiscusSDK get qiscus => appState.qiscus;
 
-  List<QMessage> _messages = <QMessage>[];
+  var _messages = HashMap<String, QMessage>(hashCode: (key) => key.hashCode);
 
   set messages(List<QMessage> messages) {
-    _messages = messages;
+    _messages.addEntries(messages.map((m) => MapEntry(m.uniqueId, m)));
     notifyListeners();
   }
 
-  List<QMessage> get messages => _messages;
+  List<QMessage> get messages => _messages.values.toList()
+    ..sort((m1, m2) => m1.timestamp.compareTo(m2.timestamp));
 
   Future<QMessage> submit({
     @required int roomId,
@@ -36,7 +38,12 @@ class MessageState extends ChangeNotifier {
       chatRoomId: roomId,
       sender: appState.account.asUser(),
     );
-    this.messages.insert(0, nextMessage);
+    _messages.update(
+      nextMessage.uniqueId,
+      (_) => nextMessage,
+      ifAbsent: () => nextMessage,
+    );
+
     notifyListeners();
 
     var completer = Completer<QMessage>();
@@ -46,10 +53,11 @@ class MessageState extends ChangeNotifier {
       callback: (message, error) {
         if (error != null) return completer.completeError(error);
 
-        var index = this
-            .messages //
-            .indexWhere((m) => m.uniqueId == nextMessage.uniqueId);
-        this.messages[index] = message;
+        _messages.update(
+          message.uniqueId,
+          (m) => message,
+          ifAbsent: () => message,
+        );
         notifyListeners();
 
         completer.complete(message);
@@ -63,16 +71,15 @@ class MessageState extends ChangeNotifier {
     var completer = Completer<List<QMessage>>();
     qiscus.getPreviousMessagesById(
       roomId: roomId,
-      messageId: this.messages.last.id,
+      messageId: this.messages.first.id,
+      limit: 10,
       callback: (List<QMessage> messages, Exception error) {
         if (error != null) return completer.completeError(error);
 
-        this.messages.addAll(messages);
+        _messages.addEntries(messages.map((m) => MapEntry(m.uniqueId, m)));
 
-        Future.delayed(const Duration(seconds: 2), () {
-          completer.complete(messages);
-          notifyListeners();
-        });
+        completer.complete(messages);
+        notifyListeners();
       },
     );
     return completer.future;
@@ -89,8 +96,8 @@ class MessageState extends ChangeNotifier {
           completer.completeError(error);
           return print('error while getting message: $error');
         } else {
-          this.messages.clear();
-          this.messages.addAll(messages);
+          _messages.addEntries(messages.map((m) => MapEntry(m.uniqueId, m)));
+
           notifyListeners();
 
           completer.complete(messages);
@@ -103,33 +110,36 @@ class MessageState extends ChangeNotifier {
 
   void subscribeChatRoom({void Function() messageReceivedCallback}) {
     qiscus.onMessageDelivered((msg) {
-      for (var message in this.messages) {
+      for (var message in _messages.values) {
         if (message.id <= msg.id && message.status != QMessageStatus.read) {
           message.status = QMessageStatus.delivered;
-          var index = this.messages.indexOf(message);
-          this.messages[index] = message;
+
+          _messages.update(
+            message.uniqueId,
+                (_) => message,
+            ifAbsent: () => message,
+          );
         }
       }
       notifyListeners();
     });
     qiscus.onMessageRead((msg) {
-      for (var message in this.messages) {
+      for (var message in _messages.values) {
         if (message.id <= msg.id) {
           message.status = QMessageStatus.read;
-          var index = this.messages.indexOf(message);
-          this.messages[index] = message;
+          _messages.update(
+            message.uniqueId,
+                (_) => message,
+            ifAbsent: () => message,
+          );
         }
       }
       notifyListeners();
     });
     qiscus.onMessageReceived((msg) {
-      print('on message received: $msg ${msg.uniqueId}');
       messageReceivedCallback?.call();
-      var index = this.messages.indexWhere((m) => m.uniqueId == msg.uniqueId);
-      if (index == -1) {
-        this.messages.insert(0, msg);
-        notifyListeners();
-      }
+      _messages.update(msg.uniqueId, (_) => msg, ifAbsent: () => msg);
+      notifyListeners();
     });
   }
 
@@ -147,9 +157,14 @@ class MessageState extends ChangeNotifier {
       callback: (error, progress, message) {
         if (error != null) return completer.completeError(error);
         if (progress != null) return print('progress: $progress');
-
         message.status = QMessageStatus.sent;
-        this.messages.insert(0, message);
+
+        _messages.update(
+          message.uniqueId,
+              (_) => message,
+          ifAbsent: () => message,
+        );
+
         notifyListeners();
         completer.complete();
       },
@@ -160,7 +175,6 @@ class MessageState extends ChangeNotifier {
   @override
   dispose() {
     super.dispose();
-    this.messages.clear();
   }
 }
 

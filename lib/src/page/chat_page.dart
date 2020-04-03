@@ -7,11 +7,12 @@ import 'package:provider/provider.dart';
 import 'package:qiscus_chat_sample/src/state/state.dart';
 import 'package:qiscus_chat_sample/src/widget/app_bar.dart';
 import 'package:qiscus_chat_sample/src/widget/chat_bubble.dart';
+import 'package:rxdart/rxdart.dart';
 
 class ChatPage extends StatefulWidget {
-  ChatPage({this.roomId});
-
   final int roomId;
+
+  ChatPage({this.roomId});
 
   @override
   State<StatefulWidget> createState() => _ChatState();
@@ -19,23 +20,98 @@ class ChatPage extends StatefulWidget {
 
 class _ChatState extends State<ChatPage> {
   final scrollController = ScrollController();
+  final scaffoldKey = GlobalKey<ScaffoldState>();
+  final _debounceTimer = TimerStream(true, const Duration(milliseconds: 500));
+  final scroll$ = StreamController<ScrollNotification>();
+  final typing$ = StreamController();
 
-  @override
-  void initState() {
-    super.initState();
-    scheduleMicrotask(() {
-      _getRoom();
-      _getMessages();
-    });
-  }
+  bool isLoading = false;
+  MessageState _messageState;
+  RoomState _roomState;
 
   @override
   Widget build(BuildContext ctx) {
     return Consumer<RoomState>(
       builder: (_, state, __) => Scaffold(
-        appBar: appBar(
-          room: state.currentRoom,
-          onBack: () => Navigator.pushReplacementNamed(context, '/login'),
+        key: scaffoldKey,
+        appBar: AppBar(
+          leading: FlatButton(
+            onPressed: () => Navigator.pop(context),
+            child: Icon(
+              Icons.chevron_left,
+              color: Colors.white,
+              size: 34,
+            ),
+          ),
+          centerTitle: false,
+          title: Container(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.start,
+              children: <Widget>[
+                CircleAvatar(
+                  backgroundImage: (state.currentRoom != null)
+                      ? Image.network(
+                          state.currentRoom.avatarUrl,
+                          fit: BoxFit.fill,
+                          height: 34,
+                          width: 34,
+                        ).image
+                      : Image.asset(
+                          'assets/ic-default-room-avatar.png',
+                          fit: BoxFit.fill,
+                          height: 34,
+                          width: 34,
+                        ).image,
+                ),
+                Padding(
+                  padding: const EdgeInsets.only(left: 20.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: <Widget>[
+                      if (state.currentRoom != null)
+                        Text(state.currentRoom.name,
+                            style: TextStyle(fontSize: 18)),
+                      if (state.currentRoom == null) Text('Loading...'),
+                      if (state.currentRoom != null)
+                        Consumer<RoomState>(
+                          builder: (_, state, __) => MultiProvider(
+                            providers: [
+                              StreamProvider.value(value: state.onTyping),
+                              StreamProvider.value(value: state.onPresence),
+                            ],
+                            child: AppBarStatus(room: state.currentRoom),
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          actions: <Widget>[
+            PopupMenuButton(
+              itemBuilder: (ctx) => <PopupMenuEntry>[
+                PopupMenuItem(
+                  child: GestureDetector(
+                    onTap: () {
+                      Scaffold.of(ctx).showSnackBar(SnackBar(
+                        duration: const Duration(milliseconds: 500),
+                        content:
+                            Text('Show room ${state.currentRoomId} detail'),
+                        action: SnackBarAction(
+                          label: 'Close',
+                          onPressed: () =>
+                              Scaffold.of(ctx).hideCurrentSnackBar(),
+                        ),
+                      ));
+                    },
+                    child: Text('Detail'),
+                  ),
+                )
+              ],
+            )
+          ],
         ),
         body: Column(
           children: [
@@ -48,12 +124,41 @@ class _ChatState extends State<ChatPage> {
     );
   }
 
-  Widget buildLoading() {
-    return Expanded(
-      child: Center(
-        child: CircularProgressIndicator(),
-      ),
-    );
+  @override
+  void deactivate() {
+    _roomState.unsubscribe(_roomState.currentRoom);
+    super.deactivate();
+  }
+
+  @override
+  void dispose() async {
+    super.dispose();
+    scrollController.dispose();
+    await scroll$.close();
+    await typing$.close();
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    scheduleMicrotask(() {
+      _messageState = Provider.of<MessageState>(context, listen: false);
+      _roomState = Provider.of<RoomState>(context, listen: false);
+    });
+
+    scheduleMicrotask(() {
+      _getRoom();
+      _getMessages();
+
+      scroll$.stream
+          .debounce((_) => _debounceTimer)
+          .where((n) => n.metrics.pixels == n.metrics.maxScrollExtent)
+          .listen((_) => _loadMore());
+
+      typing$.stream
+          .debounce((_) => _debounceTimer)
+          .listen((_) => _roomState.publishTyping(widget.roomId));
+    });
   }
 
   Widget _form(BuildContext ctx) {
@@ -62,13 +167,16 @@ class _ChatState extends State<ChatPage> {
     final key = GlobalKey<FormState>();
     var messageState = Provider.of<MessageState>(context, listen: false);
 
+    controller.addListener(() {
+      print('controller listener');
+    });
+
     final submit = (String message) {
       messageState.submit(
         roomId: roomId,
         message: message,
       );
       controller.text = '';
-      _animateScrollToBottom();
     };
     return Form(
       key: key,
@@ -77,11 +185,9 @@ class _ChatState extends State<ChatPage> {
           IconButton(
             icon: Icon(Icons.attach_file),
             onPressed: () async {
-              print('get file');
               var file = await FilePicker.getFile();
               if (file != null) {
                 await messageState.sendFile(file);
-                _animateScrollToBottom();
               }
             },
           ),
@@ -114,45 +220,12 @@ class _ChatState extends State<ChatPage> {
     );
   }
 
-  bool isLoading = false;
-
-  Widget _messageList(BuildContext ctx) {
-    return Expanded(
-      child: Consumer<MessageState>(builder: (_, state, __) {
-        var reversed = state.messages.reversed;
-        return ListView.separated(
-          separatorBuilder: (_, __) {
-            return Divider(color: Colors.grey, height: 1.0);
-          },
-          itemCount: state.messages.length,
-          itemBuilder: (ctx, index) => ChatBubble(
-            message: reversed.elementAt(index),
-          ),
-          controller: scrollController,
-          padding: EdgeInsets.symmetric(horizontal: 10),
-        );
-      }),
-    );
-  }
-
   Future _getMessages() async {
     var roomId = widget.roomId;
     if (roomId == null) return;
     var messageState = Provider.of<MessageState>(context, listen: false);
     await messageState.getAllMessage(roomId);
-    messageState.subscribeChatRoom(messageReceivedCallback: () {
-      _animateScrollToBottom();
-    });
-  }
-
-  void _animateScrollToBottom() {
-    Timer(const Duration(milliseconds: 400), () {
-      scrollController.animateTo(
-        scrollController.position.maxScrollExtent,
-        duration: const Duration(milliseconds: 1000),
-        curve: Curves.ease,
-      );
-    });
+    messageState.subscribeChatRoom();
   }
 
   Future _getRoom() async {
@@ -163,8 +236,40 @@ class _ChatState extends State<ChatPage> {
     roomState.subscribe(room);
   }
 
-  @override
-  void dispose() {
-    super.dispose();
+  Future<void> _loadMore() async {
+    setState(() {
+      isLoading = true;
+    });
+    await _messageState.getPreviousMessage(widget.roomId);
+    setState(() {
+      isLoading = false;
+    });
+  }
+
+  Widget _messageList(BuildContext ctx) {
+    return Expanded(
+      child: NotificationListener<ScrollNotification>(
+        onNotification: (notification) {
+          scroll$.add(notification);
+          return true;
+        },
+        child: Consumer<MessageState>(builder: (_, state, __) {
+          var reversed = state.messages.reversed;
+          return ListView.separated(
+            separatorBuilder: (_, __) {
+              return Divider(color: Colors.grey, height: 1.0);
+            },
+            itemCount: state.messages.length,
+            itemBuilder: (ctx, index) =>
+                ChatBubble(
+                  message: reversed.elementAt(index),
+                ),
+            controller: scrollController,
+            padding: EdgeInsets.symmetric(horizontal: 10),
+            reverse: true,
+          );
+        }),
+      ),
+    );
   }
 }

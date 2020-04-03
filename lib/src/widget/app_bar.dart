@@ -36,29 +36,38 @@ AppBar appBar({
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisAlignment: MainAxisAlignment.start,
         children: <Widget>[
-          Image.network(
-            room.avatarUrl,
-            fit: BoxFit.fill,
-            height: 34,
-            width: 34,
+          CircleAvatar(
+            backgroundImage: (room != null)
+                ? Image.network(
+                    room.avatarUrl,
+                    fit: BoxFit.fill,
+                    height: 34,
+                    width: 34,
+                  ).image
+                : Image.asset(
+                    'assets/ic-default-room-avatar.png',
+                    fit: BoxFit.fill,
+                    height: 34,
+                    width: 34,
+                  ).image,
           ),
           Padding(
             padding: const EdgeInsets.only(left: 20.0),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
-                Text(room.name, style: TextStyle(fontSize: 18)),
-                Consumer<RoomState>(
-                  builder: (_, state, __) {
-                    return MultiProvider(
-                      providers: [
+                if (room != null)
+                  Text(room.name, style: TextStyle(fontSize: 18)),
+                if (room == null) Text('Loading...'),
+                if (room != null)
+                  Consumer<RoomState>(
+                    builder: (_, state, __) {
+                      return MultiProvider(providers: [
                         StreamProvider.value(value: state.onTyping),
                         StreamProvider.value(value: state.onPresence),
-                      ],
-                      child: AppBarStatus(room: room),
-                    );
-                  },
-                ),
+                      ], child: AppBarStatus(room: room));
+                    },
+                  ),
               ],
             ),
           ),

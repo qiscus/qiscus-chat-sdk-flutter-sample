@@ -4,7 +4,9 @@ import 'package:flutter/foundation.dart';
 import 'package:qiscus_chat_sdk/qiscus_chat_sdk.dart';
 
 class AppState extends ChangeNotifier {
-  AppState();
+  AppState() {
+    qiscus.enableDebugMode(enable: true);
+  }
 
   final qiscus = QiscusSDK();
 
@@ -39,5 +41,13 @@ class AppState extends ChangeNotifier {
       },
     );
     return completer.future;
+  }
+
+  @override
+  void dispose() {
+    qiscus.clearUser(callback: (err) {
+      print('error while clearing user data');
+    });
+    super.dispose();
   }
 }

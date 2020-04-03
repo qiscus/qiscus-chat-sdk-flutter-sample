@@ -1,13 +1,10 @@
 import 'dart:async';
+import 'dart:collection';
 
 import 'package:flutter/foundation.dart';
 import 'package:qiscus_chat_sdk/qiscus_chat_sdk.dart';
 
 import 'app_state.dart';
-
-class TypingState extends ChangeNotifier {
-  //
-}
 
 class RoomState extends ChangeNotifier {
   RoomState({@required this.appState});
@@ -27,12 +24,13 @@ class RoomState extends ChangeNotifier {
     notifyListeners();
   }
 
-  var _rooms = <QChatRoom>[];
+  HashMap<int, QChatRoom> _rooms = HashMap(hashCode: (key) => key.hashCode);
 
-  List<QChatRoom> get rooms => _rooms;
+  Iterable<QChatRoom> get rooms => _rooms.values;
 
   set rooms(List<QChatRoom> rooms) {
-    _rooms = rooms;
+    var res = rooms.map((room) => MapEntry(room.id, room));
+    _rooms.addEntries(res);
     notifyListeners();
   }
 
@@ -48,7 +46,7 @@ class RoomState extends ChangeNotifier {
         }
 
         this.currentRoom = room;
-        this.rooms.add(room);
+        this._rooms.putIfAbsent(room.id, () => room);
         subscribeUser(userId);
       },
     );
@@ -62,9 +60,24 @@ class RoomState extends ChangeNotifier {
       callback: (room, messages, error) {
         if (error != null) return completer.completeError(error);
         this.currentRoom = room;
+        this._rooms.putIfAbsent(room.id, () => room);
         completer.complete(room);
       },
     );
+    return completer.future;
+  }
+
+  Future<List<QChatRoom>> getRooms() async {
+    var completer = Completer<List<QChatRoom>>();
+    qiscus.getAllChatRooms(callback: (rooms, error) {
+      if (error != null) return completer.completeError(error);
+
+      var _rooms = rooms.map((r) => MapEntry(r.id, r));
+      this._rooms.addEntries(_rooms);
+
+      notifyListeners();
+      completer.complete(rooms);
+    });
     return completer.future;
   }
 
@@ -93,6 +106,10 @@ class RoomState extends ChangeNotifier {
     });
     _typing$.onCancel = () => unsubscribe();
     return _typing$.stream.distinct();
+  }
+
+  void publishTyping(int roomId) {
+    qiscus.publishTyping(roomId: roomId, isTyping: true);
   }
 
   final _online$ = StreamController<Online>.broadcast();

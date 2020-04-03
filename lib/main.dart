@@ -2,6 +2,7 @@ import 'package:fluro/fluro.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:qiscus_chat_sample/src/page/login_page.dart';
+import 'package:qiscus_chat_sample/src/page/page.dart';
 import 'package:qiscus_chat_sample/src/state/app_state.dart';
 import 'package:qiscus_chat_sample/src/state/room_state.dart';
 
@@ -36,6 +37,14 @@ class _MyAppState extends State<MyApp> {
       ..handle(
         '/room/:roomId',
         handler: (_, args) => ChatPage(roomId: int.parse(args['roomId'][0])),
+      )
+      ..handle('/room/:roomId/detail',
+          handler: (_, args) => RoomDetailPage(
+                roomId: int.parse(args['roomId'][0]),
+              ))
+      ..handle(
+        '/room',
+        handler: (_, __) => RoomListPage(),
       );
   }
 
@@ -55,13 +64,22 @@ class _MyAppState extends State<MyApp> {
         ChangeNotifierProvider.value(value: messageState),
       ],
       child: Consumer<AppState>(
-        builder: (_, state, __) => MaterialApp(
-          title: 'Flutter Demo',
-          theme: ThemeData(primarySwatch: Colors.blue),
-          onGenerateRoute: router.generator,
-          initialRoute: state.isLoggedIn ? '/' : '/login',
-        ),
+        builder: (_, state, __) =>
+            MaterialApp(
+              title: 'Flutter Demo',
+              theme: ThemeData(primarySwatch: Colors.blue),
+              onGenerateRoute: router.generator,
+              initialRoute: '/login',
+            ),
       ),
     );
+  }
+
+  @override
+  void deactivate() {
+    messageState.dispose();
+    roomState.dispose();
+    appState.dispose();
+    super.deactivate();
   }
 }

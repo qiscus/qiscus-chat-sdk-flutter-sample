@@ -1,3 +1,4 @@
+import 'package:date_format/date_format.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:qiscus_chat_sdk/qiscus_chat_sdk.dart';
@@ -16,7 +17,17 @@ class ChatBubble extends StatelessWidget {
           fit: BoxFit.cover,
         ).image,
       ),
-      title: Text(message.sender.name),
+      title: Stack(children: <Widget>[
+        Text(message.sender.name),
+        Container(
+          alignment: Alignment.topRight,
+          child: Text(
+            formatDate(
+                message.timestamp, [yyyy, '-', mm, '-', d, ' ', HH, ':', mm]),
+            style: TextStyle(fontSize: 12),
+          ),
+        ),
+      ]),
       subtitle: Stack(
         children: <Widget>[
           if (message.type == QMessageType.text) Text(message.text),
