@@ -129,7 +129,7 @@ class MessageState extends ChangeNotifier {
           message.status = QMessageStatus.read;
           _messages.update(
             message.uniqueId,
-                (_) => message,
+            (_) => message,
             ifAbsent: () => message,
           );
         }
@@ -161,7 +161,7 @@ class MessageState extends ChangeNotifier {
 
         _messages.update(
           message.uniqueId,
-              (_) => message,
+          (_) => message,
           ifAbsent: () => message,
         );
 
