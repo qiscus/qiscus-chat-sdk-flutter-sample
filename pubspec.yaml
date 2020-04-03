@@ -33,10 +33,10 @@ dependencies:
   fluro: ^1.6.1
   date_format: ^1.0.8
   qiscus_chat_sdk:
-    path: ../qiscus-chat-sdk-flutter
-  #    git:
-  #      url: git://github.com/qiscus/qiscus-chat-sdk-flutter.git
-  #      ref: master
+#    path: ../qiscus-chat-sdk-flutter
+    git:
+      url: git://github.com/qiscus/qiscus-chat-sdk-flutter.git
+      ref: master
   flutter:
     sdk: flutter
 

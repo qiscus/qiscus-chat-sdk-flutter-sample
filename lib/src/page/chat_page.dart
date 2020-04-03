@@ -260,10 +260,9 @@ class _ChatState extends State<ChatPage> {
               return Divider(color: Colors.grey, height: 1.0);
             },
             itemCount: state.messages.length,
-            itemBuilder: (ctx, index) =>
-                ChatBubble(
-                  message: reversed.elementAt(index),
-                ),
+            itemBuilder: (ctx, index) => ChatBubble(
+              message: reversed.elementAt(index),
+            ),
             controller: scrollController,
             padding: EdgeInsets.symmetric(horizontal: 10),
             reverse: true,

@@ -116,7 +116,7 @@ class MessageState extends ChangeNotifier {
 
           _messages.update(
             message.uniqueId,
-                (_) => message,
+            (_) => message,
             ifAbsent: () => message,
           );
         }

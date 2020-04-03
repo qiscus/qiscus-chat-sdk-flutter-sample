@@ -64,13 +64,12 @@ class _MyAppState extends State<MyApp> {
         ChangeNotifierProvider.value(value: messageState),
       ],
       child: Consumer<AppState>(
-        builder: (_, state, __) =>
-            MaterialApp(
-              title: 'Flutter Demo',
-              theme: ThemeData(primarySwatch: Colors.blue),
-              onGenerateRoute: router.generator,
-              initialRoute: '/login',
-            ),
+        builder: (_, state, __) => MaterialApp(
+          title: 'Flutter Demo',
+          theme: ThemeData(primarySwatch: Colors.blue),
+          onGenerateRoute: router.generator,
+          initialRoute: '/login',
+        ),
       ),
     );
   }
