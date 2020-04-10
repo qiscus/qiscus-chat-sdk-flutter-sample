@@ -36,13 +36,6 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "2.4.0"
-  bloc:
-    dependency: "direct main"
-    description:
-      name: bloc
-      url: "https://pub.dartlang.org"
-    source: hosted
-    version: "3.0.0"
   boolean_selector:
     dependency: transitive
     description:
@@ -155,6 +148,13 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "0.16.1"
+  cuid:
+    dependency: "direct main"
+    description:
+      name: cuid
+      url: "https://pub.dartlang.org"
+    source: hosted
+    version: "0.1.2"
   cupertino_icons:
     dependency: "direct main"
     description:
@@ -230,20 +230,6 @@ packages:
     description: flutter
     source: sdk
     version: "0.0.0"
-  flutter_bloc:
-    dependency: "direct main"
-    description:
-      name: flutter_bloc
-      url: "https://pub.dartlang.org"
-    source: hosted
-    version: "3.2.0"
-  flutter_mobx:
-    dependency: "direct main"
-    description:
-      name: flutter_mobx
-      url: "https://pub.dartlang.org"
-    source: hosted
-    version: "1.0.1"
   flutter_plugin_android_lifecycle:
     dependency: transitive
     description:
@@ -251,13 +237,6 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "1.0.6"
-  flutter_redux:
-    dependency: "direct main"
-    description:
-      name: flutter_redux
-      url: "https://pub.dartlang.org"
-    source: hosted
-    version: "0.6.0"
   flutter_test:
     dependency: "direct dev"
     description: flutter
@@ -389,20 +368,6 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "0.9.6+3"
-  mobx:
-    dependency: "direct main"
-    description:
-      name: mobx
-      url: "https://pub.dartlang.org"
-    source: hosted
-    version: "1.0.2+1"
-  mobx_codegen:
-    dependency: "direct dev"
-    description:
-      name: mobx_codegen
-      url: "https://pub.dartlang.org"
-    source: hosted
-    version: "1.0.2"
   mqtt_client:
     dependency: transitive
     description:
@@ -504,11 +469,9 @@ packages:
   qiscus_chat_sdk:
     dependency: "direct main"
     description:
-      path: "."
-      ref: master
-      resolved-ref: "4cdb999f1b701ad03e43941b18c67d687a957c5e"
-      url: "git://github.com/qiscus/qiscus-chat-sdk-flutter.git"
-    source: git
+      path: "..\\qiscus-chat-sdk-flutter"
+      relative: true
+    source: path
     version: "0.1.0"
   quiver:
     dependency: transitive
@@ -517,20 +480,6 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "2.0.5"
-  redux:
-    dependency: "direct main"
-    description:
-      name: redux
-      url: "https://pub.dartlang.org"
-    source: hosted
-    version: "4.0.0"
-  redux_thunk:
-    dependency: "direct main"
-    description:
-      name: redux_thunk
-      url: "https://pub.dartlang.org"
-    source: hosted
-    version: "0.3.0"
   retrofit:
     dependency: transitive
     description:

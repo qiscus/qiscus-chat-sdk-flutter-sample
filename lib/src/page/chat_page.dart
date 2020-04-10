@@ -21,7 +21,8 @@ class ChatPage extends StatefulWidget {
 class _ChatState extends State<ChatPage> {
   final scrollController = ScrollController();
   final scaffoldKey = GlobalKey<ScaffoldState>();
-  final _debounceTimer = TimerStream(true, const Duration(milliseconds: 500));
+  final _debounceTimer = TimerStream(true, const Duration(milliseconds: 500)) //
+      .asBroadcastStream();
   final scroll$ = StreamController<ScrollNotification>();
   final typing$ = StreamController();
 
@@ -168,7 +169,7 @@ class _ChatState extends State<ChatPage> {
     var messageState = Provider.of<MessageState>(context, listen: false);
 
     controller.addListener(() {
-      print('controller listener');
+      typing$.sink.add(null);
     });
 
     final submit = (String message) {
@@ -250,7 +251,7 @@ class _ChatState extends State<ChatPage> {
     return Expanded(
       child: NotificationListener<ScrollNotification>(
         onNotification: (notification) {
-          scroll$.add(notification);
+          scroll$.sink.add(notification);
           return true;
         },
         child: Consumer<MessageState>(builder: (_, state, __) {

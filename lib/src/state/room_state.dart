@@ -99,9 +99,12 @@ class RoomState extends ChangeNotifier {
     Timer _timer;
     var unsubscribe = qiscus.onUserTyping((userId, roomId, isTyping) {
       if (_timer != null) _timer.cancel();
-      _typing$.add(Typing(userId, roomId, isTyping));
+      if (userId != appState.userId) {
+        _typing$.add(Typing(userId, roomId, isTyping));
+      }
       _timer = Timer(const Duration(seconds: 2), () {
         _typing$.add(Typing(userId, roomId, false));
+        qiscus.publishTyping(roomId: roomId, isTyping: false);
       });
     });
     _typing$.onCancel = () => unsubscribe();
@@ -117,7 +120,6 @@ class RoomState extends ChangeNotifier {
   Stream<Online> get onPresence {
     var unsubscribe = qiscus.onUserOnlinePresence(
       (userId, isOnline, lastOnline) {
-        print('on presence: $userId $isOnline $lastOnline');
         _online$.add(Online(userId, isOnline, lastOnline));
       },
     );

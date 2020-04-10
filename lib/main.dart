@@ -21,7 +21,7 @@ extension on Router {
     String path, {
     Widget Function(BuildContext, Map<String, List<String>>) handler,
   }) {
-    this.define(
+    define(
       path,
       handler: Handler(handlerFunc: (ctx, args) => handler(ctx, args)),
     );
@@ -33,19 +33,18 @@ class _MyAppState extends State<MyApp> {
 
   _MyAppState() {
     router
-      ..handle('/login', handler: (_, __) => LoginPage())
-      ..handle(
-        '/room/:roomId',
-        handler: (_, args) => ChatPage(roomId: int.parse(args['roomId'][0])),
-      )
-      ..handle('/room/:roomId/detail',
-          handler: (_, args) => RoomDetailPage(
-                roomId: int.parse(args['roomId'][0]),
-              ))
-      ..handle(
-        '/room',
-        handler: (_, __) => RoomListPage(),
-      );
+          ..handle('/login', handler: (_, __) => LoginPage())
+          ..handle('/room/:roomId',
+              handler: (_, args) => ChatPage(
+                    roomId: int.parse(args['roomId'][0]),
+                  ))
+          ..handle('/room/:roomId/detail',
+              handler: (_, args) => RoomDetailPage(
+                    roomId: int.parse(args['roomId'][0]),
+                  ))
+          ..handle('/room', handler: (_, __) => RoomListPage())
+        //
+        ;
   }
 
   static final appState = AppState();

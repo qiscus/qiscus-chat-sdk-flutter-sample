@@ -66,7 +66,4 @@ class ChatBubble extends StatelessWidget {
       ),
     );
   }
-
-  String _getThumbnailUrl(String url) =>
-      url.replaceAll(r'/upload/', '/upload/w_30,c_scale/');
 }
