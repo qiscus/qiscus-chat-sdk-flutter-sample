@@ -211,6 +211,13 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "1.5.1"
+  firebase_messaging:
+    dependency: "direct main"
+    description:
+      name: firebase_messaging
+      url: "https://pub.dartlang.org"
+    source: hosted
+    version: "6.0.13"
   fixnum:
     dependency: transitive
     description:
@@ -431,6 +438,13 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "2.4.0"
+  platform:
+    dependency: transitive
+    description:
+      name: platform
+      url: "https://pub.dartlang.org"
+    source: hosted
+    version: "2.2.1"
   pool:
     dependency: transitive
     description:
@@ -469,11 +483,9 @@ packages:
   qiscus_chat_sdk:
     dependency: "direct main"
     description:
-      path: "."
-      ref: master
-      resolved-ref: "93732fdbd87b8aac337283fe433653eb449d2f5f"
-      url: "git://github.com/qiscus/qiscus-chat-sdk-flutter.git"
-    source: git
+      path: "..\\qiscus-chat-sdk-flutter"
+      relative: true
+    source: path
     version: "0.1.0"
   quiver:
     dependency: transitive

@@ -48,6 +48,7 @@ class RoomState extends ChangeNotifier {
         this.currentRoom = room;
         this._rooms.putIfAbsent(room.id, () => room);
         subscribeUser(userId);
+        markAsRead(room.id, room.lastMessage?.id);
       },
     );
     return completer.future;
@@ -62,6 +63,20 @@ class RoomState extends ChangeNotifier {
         this.currentRoom = room;
         this._rooms.putIfAbsent(room.id, () => room);
         completer.complete(room);
+        markAsRead(room.id, room.lastMessage?.id);
+      },
+    );
+    return completer.future;
+  }
+
+  Future<void> markAsRead(int roomId, int messageId) async {
+    var completer = Completer<void>();
+    qiscus.markAsRead(
+      roomId: roomId,
+      messageId: messageId,
+      callback: (error) {
+        if (error != null) return completer.completeError(error);
+        completer.complete();
       },
     );
     return completer.future;
