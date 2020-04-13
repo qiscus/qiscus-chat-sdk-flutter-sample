@@ -1,6 +1,6 @@
 name: qiscus_chat_sample
 description: Qiscus Chat SDK Sample
-version: 1.0.2
+version: 1.0.3+alpha1
 
 environment:
   sdk: '>=2.7.0 <3.0.0'
@@ -16,10 +16,10 @@ dependencies:
   date_format: ^1.0.8
   cuid: ^0.1.2
   qiscus_chat_sdk:
-    path: ../qiscus-chat-sdk-flutter
-    # git:
-    #   url: git://github.com/qiscus/qiscus-chat-sdk-flutter.git
-    #   ref: master
+    # path: ../qiscus-chat-sdk-flutter
+    git:
+      url: git://github.com/qiscus/qiscus-chat-sdk-flutter.git
+      ref: master
   flutter:
     sdk: flutter
 

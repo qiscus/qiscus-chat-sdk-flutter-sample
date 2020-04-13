@@ -469,9 +469,11 @@ packages:
   qiscus_chat_sdk:
     dependency: "direct main"
     description:
-      path: "..\\qiscus-chat-sdk-flutter"
-      relative: true
-    source: path
+      path: "."
+      ref: master
+      resolved-ref: "93732fdbd87b8aac337283fe433653eb449d2f5f"
+      url: "git://github.com/qiscus/qiscus-chat-sdk-flutter.git"
+    source: git
     version: "0.1.0"
   quiver:
     dependency: transitive
