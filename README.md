@@ -1,9 +1,17 @@
 # Qiscus Chat SDK Flutter Sample UI
 
-This repo is aimed to give an example on how to build a chat UI using Qiscus Chat SDK. Qiscus Chat Sample UI is built with full functionalities so that you can figure out the flow and main activities of common Chat apps. This sample app is built on top of Qiscus Chat SDK
+This repo is aimed to give an example on how to build a chat UI using Qiscus Chat SDK. Qiscus Chat Sample UI is built with full functionalities so that you can figure out the flow and main activities of common Chat apps. This sample app is built on top of Qiscus Chat SDK [docs](https://documentation.qiscus.com/chat-sdk-flutter/introduction)
 
 ## How to Run
+Make sure your environment match with the flutter requirement, you can check by running this code in your terminal: 
+`flutter doctor`
+
+After that if you dont have any issue regarding the flutter, then you can run this sample by using this following code:
 `flutter run`
+
+## Screen shots
+You can see some of sample UI in this repository
+
 
 ## Getting Started with Flutter
 
@@ -17,3 +25,9 @@ A few resources to get you started if this is your first Flutter project:
 For help getting started with Flutter, view our
 [online documentation](https://flutter.dev/docs), which offers tutorials,
 samples, guidance on mobile development, and a full API reference.
+
+## Contribution
+Qiscus Chat SDK Sample UI is fully open-source. All contributions and suggestions are welcome!
+
+## Security Disclosure
+If you believe you have identified a security vulnerability with Qiscus Chat SDK, you should report it as soon as possible via email to contact.us@qiscus.com. Please do not post it to a public issue.
