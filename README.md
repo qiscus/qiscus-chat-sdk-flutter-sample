@@ -4,9 +4,11 @@ This repo is aimed to give an example on how to build a chat UI using Qiscus Cha
 
 ## How to Run
 Make sure your environment match with the flutter requirement, you can check by running this code in your terminal: 
+
 `flutter doctor`
 
 After that if you dont have any issue regarding the flutter, then you can run this sample by using this following code:
+
 `flutter run`
 
 ## Screen shots
