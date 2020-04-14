@@ -14,7 +14,10 @@ After that if you dont have any issue regarding the flutter, then you can run th
 ## Screen shots
 You can see sample UI in this repository
 
+<img src="https://d1edrlpyc25xu0.cloudfront.net/sdksample/image/upload/IQQGENk7W0/Screen+Shot+2020-04-14+at+18.26.46.png" alt="Login" width="240"/>
+
 <img src="https://d1edrlpyc25xu0.cloudfront.net/sdksample/image/upload/yULkESkVGl/Screen+Shot+2020-04-14+at+16.08.51.png" alt="Chat Rooms" width="240"/>
+
 
 ## Getting Started with Flutter
 
