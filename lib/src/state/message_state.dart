@@ -71,7 +71,6 @@ class MessageState extends ChangeNotifier {
     var completer = Completer<List<QMessage>>();
     qiscus.getPreviousMessagesById(
       roomId: roomId,
-      messageId: this.messages.first.id,
       limit: 10,
       callback: (List<QMessage> messages, Exception error) {
         if (error != null) return completer.completeError(error);

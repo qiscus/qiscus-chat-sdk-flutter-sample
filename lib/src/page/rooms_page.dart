@@ -91,6 +91,7 @@ class _RoomListState extends State<RoomListPage> {
                       ),
                       subtitle: Text(
                         room.lastMessage?.text ?? 'No last message',
+                        overflow: TextOverflow.ellipsis,
                       ),
                       trailing: (room.unreadCount > 0)
                           ? Container(

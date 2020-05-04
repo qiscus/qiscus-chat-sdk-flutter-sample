@@ -11,7 +11,7 @@ class AppState extends ChangeNotifier {
   }
 
   AppState() {
-    qiscus.enableDebugMode(enable: true);
+    qiscus.enableDebugMode(enable: false);
     fbMessaging.configure(
       onBackgroundMessage: AppState.onBackgroundMessage,
       onMessage: (Map<String, dynamic> json) async {
@@ -48,29 +48,46 @@ class AppState extends ChangeNotifier {
     return completer.future;
   }
 
-  Future<QAccount> setUser(String userId, String userKey) {
+  Future<QAccount> _setUser(String userId, String userKey) async {
     var completer = Completer<QAccount>();
     qiscus.setUser(
       userId: userId,
       userKey: userKey,
-      callback: (account, error) async {
-        if (error != null) return completer.completeError(error);
-        this.account = account;
-
-        var token = await fbMessaging.getToken();
-        this.token = token;
-        qiscus.registerDeviceToken(
-          token: token,
-          isDevelopment: true,
-          callback: (isChanged, error) {
-            if (error != null) return completer.completeError(error);
-
-            return completer.complete(account);
-          },
-        );
+      callback: (account, error) {
+        if (error != null) {
+          completer.completeError(error);
+        } else {
+          this.account = account;
+          completer.complete(account);
+        }
       },
     );
     return completer.future;
+  }
+
+  Future<void> _registerFcmToken() async {
+    var completer = Completer();
+    var token = await fbMessaging.getToken();
+    this.token = token;
+
+    qiscus.registerDeviceToken(
+        token: null,
+        callback: (changed, error) {
+          if (error != null) {
+            completer.completeError(error);
+          } else {
+            completer.complete();
+          }
+        });
+    return completer.future;
+  }
+
+  Future<QAccount> setUser(String userId, String userKey) async {
+    var account = await _setUser(userId, userKey);
+    print('done setting user: $account');
+    await _registerFcmToken();
+    print('done setting fcm token');
+    return account;
   }
 
   @override

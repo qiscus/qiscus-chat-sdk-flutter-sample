@@ -99,7 +99,11 @@ class _LoginState extends State<LoginPage> {
       });
 
       await appState.setup(appId);
-      await appState.setUser(userId, userKey);
+      await appState.setUser(userId, userKey).then((_) {
+        print('call me!');
+      }).catchError((error) {
+        print('got error while trying to login: $error');
+      });
 
       setState(() {
         isLoggingIn = false;

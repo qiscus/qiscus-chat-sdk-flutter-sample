@@ -96,16 +96,8 @@ class _ChatState extends State<ChatPage> {
                 PopupMenuItem(
                   child: GestureDetector(
                     onTap: () {
-                      Scaffold.of(ctx).showSnackBar(SnackBar(
-                        duration: const Duration(milliseconds: 500),
-                        content:
-                            Text('Show room ${state.currentRoomId} detail'),
-                        action: SnackBarAction(
-                          label: 'Close',
-                          onPressed: () =>
-                              Scaffold.of(ctx).hideCurrentSnackBar(),
-                        ),
-                      ));
+                      final roomId = widget.roomId;
+                      Navigator.pushNamed(context, '/room/$roomId/detail');
                     },
                     child: Text('Detail'),
                   ),

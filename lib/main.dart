@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:qiscus_chat_sample/src/page/login_page.dart';
 import 'package:qiscus_chat_sample/src/page/page.dart';
+import 'package:qiscus_chat_sample/src/room/presentation/page/room_detail/room_detail.dart';
 import 'package:qiscus_chat_sample/src/state/app_state.dart';
 import 'package:qiscus_chat_sample/src/state/room_state.dart';
 
@@ -33,17 +34,20 @@ class _MyAppState extends State<MyApp> {
 
   _MyAppState() {
     router
-          ..handle('/login', handler: (_, __) => LoginPage())
-          ..handle('/room/:roomId',
-              handler: (_, args) => ChatPage(
-                    roomId: int.parse(args['roomId'][0]),
-                  ))
-          ..handle('/room/:roomId/detail',
-              handler: (_, args) => RoomDetailPage(
-                    roomId: int.parse(args['roomId'][0]),
-                  ))
-          ..handle('/room', handler: (_, __) => RoomListPage())
-        //
+          ..handle('/login', handler: (_, __) => LoginPage())..handle(
+        '/room/:roomId',
+        handler: (_, args) =>
+            ChatPage(
+              roomId: int.parse(args['roomId'][0]),
+            ))..handle('/room/:roomId/detail',
+        handler: (_, args) =>
+            RoomDetail(
+              roomId: int.parse(args['roomId'][0]),
+              qiscus: appState.qiscus,
+            ))..handle('/room', handler: (_, __) => RoomListPage())
+    // to prevent semicolon get formatted into the end of statement
+    // .. so if we need to add a new route, we do not have
+    // .. to move the semicolon.
         ;
   }
 
@@ -68,6 +72,7 @@ class _MyAppState extends State<MyApp> {
           theme: ThemeData(primarySwatch: Colors.blue),
           onGenerateRoute: router.generator,
           initialRoute: '/login',
+          debugShowCheckedModeBanner: false,
         ),
       ),
     );
