@@ -11,7 +11,7 @@ class AppState extends ChangeNotifier {
   }
 
   AppState() {
-    qiscus.enableDebugMode(enable: false);
+//    qiscus.enableDebugMode(enable: true);
     fbMessaging.configure(
       onBackgroundMessage: AppState.onBackgroundMessage,
       onMessage: (Map<String, dynamic> json) async {
@@ -71,7 +71,7 @@ class AppState extends ChangeNotifier {
     this.token = token;
 
     qiscus.registerDeviceToken(
-        token: null,
+        token: token,
         callback: (changed, error) {
           if (error != null) {
             completer.completeError(error);

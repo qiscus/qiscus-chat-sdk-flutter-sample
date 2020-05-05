@@ -17,15 +17,16 @@ dependencies:
   date_format: ^1.0.8
   cuid: ^0.1.2
   flutter_bloc:
-  qiscus_chat_sdk: ^1.0.0+alpha3
+  qiscus_chat_sdk: ^1.0.0+alpha5
   rxdart:
   flutter:
     sdk: flutter
   cupertino_icons: ^0.1.2
 
-dependency_overrides:
-  qiscus_chat_sdk:
-    path: ../qiscus-chat-sdk-flutter
+# usefull for local development
+# dependency_overrides:
+#   qiscus_chat_sdk:
+#     path: ../qiscus-chat-sdk-flutter
 
 dev_dependencies:
   build_runner:
