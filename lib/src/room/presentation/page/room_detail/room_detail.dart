@@ -31,6 +31,12 @@ class _RoomDetailState extends State<RoomDetail> {
   }
 
   @override
+  void dispose() {
+    super.dispose();
+    bloc.close();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return BlocBuilder<RoomDetailBloc, RoomDetailBlocState>(
       bloc: bloc,
@@ -39,7 +45,7 @@ class _RoomDetailState extends State<RoomDetail> {
           appBar: AppBar(
             title: state.map(
               loading: (state) => Text('Loading...'),
-              ready: (state) => Text(state.room.name),
+              ready: (state) => Text('Rooms info'),
             ),
             leading: IconButton(
               icon: Icon(Icons.chevron_left),
@@ -48,25 +54,127 @@ class _RoomDetailState extends State<RoomDetail> {
           ),
           body: Column(
             children: <Widget>[
+              // Room Avatar
               Container(
-                child: state.when(
-                  loading: () =>
-                      Image.asset('assets/ic-default-room-avatar.png'),
-                  ready: (room) => Image.network(room.avatarUrl),
+                height: 200,
+                width: double.infinity,
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: <Widget>[
+                    Container(
+                      height: double.infinity,
+                      width: double.infinity,
+                      color: Colors.black26,
+                      child: state.when(
+                        loading: () => Image.asset(
+                          'assets/ic-default-avatar.png',
+                          fit: BoxFit.scaleDown,
+                        ),
+                        ready: (room) => Image.network(
+                          room.avatarUrl,
+                          fit: BoxFit.scaleDown,
+                        ),
+                      ),
+                    ),
+                    Positioned(
+                      bottom: 0,
+                      right: 0,
+                      left: 0,
+                      height: 55,
+                      child: DecoratedBox(
+                        decoration: BoxDecoration(
+                          color: Color.fromRGBO(0, 0, 0, 0.3),
+                          gradient: LinearGradient(
+                            colors: <Color>[
+                              Color.fromRGBO(0, 0, 0, 0.9),
+                              Color.fromRGBO(51, 51, 51, 0.2),
+                            ],
+                            begin: Alignment.bottomCenter,
+                            end: Alignment.topCenter,
+                          ),
+                        ),
+                        child: Row(
+                          children: <Widget>[
+                            Expanded(
+                              child: Padding(
+                                padding: const EdgeInsets.only(left: 8.0),
+                                child: state.when(
+                                  loading: () => Text(
+                                    'Loading...',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                  ready: (r) => Text(
+                                    r.name,
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                            ...state.when(
+                              loading: () => [Container()],
+                              ready: (r) => <Widget>[
+                                IconButton(
+                                  icon: Icon(
+                                    Icons.edit,
+                                    color: Colors.white,
+                                  ),
+                                  onPressed: () {},
+                                ),
+                                IconButton(
+                                  icon: Icon(
+                                    Icons.image,
+                                    color: Colors.white,
+                                  ),
+                                  onPressed: () {},
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
-              state.map(
-                loading: (state) => CircularProgressIndicator(),
-                ready: (state) => ListView.builder(
-                  itemCount: state.room.participants.length,
-                  itemBuilder: (context, index) {
-                    final participant = state.room.participants[index];
-                    final avatar = Image.network(participant.avatarUrl);
-                    return ListTile(
-                      leading: CircleAvatar(
-                        backgroundImage: avatar.image,
+              Container(
+                width: double.infinity,
+                color: Color.fromRGBO(250, 250, 250, 1),
+                child: Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: Text(
+                    'PARTICIPANTS',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w600,
+                      color: Color.fromRGBO(120, 120, 120, 1),
+                    ),
+                  ),
+                ),
+              ),
+              Expanded(
+                child: state.when(
+                  loading: () => Container(),
+                  ready: (r) {
+                    return ListView.builder(
+                      itemCount: r.participants.length,
+                      itemBuilder: (context, index) => ListTile(
+                        leading: CircleAvatar(
+                          backgroundImage: Image.network(
+                            r.participants[index].avatarUrl,
+                          ).image,
+                        ),
+                        title: Text(r.participants[index].name),
+                        trailing: IconButton(
+                          icon: Icon(
+                            Icons.remove_circle_outline,
+                            color: Colors.redAccent,
+                          ),
+                          onPressed: () {},
+                        ),
                       ),
-                      title: Text(participant.name),
                     );
                   },
                 ),

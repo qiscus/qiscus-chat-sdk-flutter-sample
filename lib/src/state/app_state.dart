@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
@@ -6,16 +7,21 @@ import 'package:qiscus_chat_sdk/qiscus_chat_sdk.dart';
 
 class AppState extends ChangeNotifier {
   static Future<void> onBackgroundMessage(Map<String, dynamic> json) async {
-    //
     print('fbMessaging::@background-message -> $json');
   }
 
   AppState() {
-//    qiscus.enableDebugMode(enable: true);
+//    qiscus.enableDebugMode(enable: true, level: QLogLevel.verbose);
     fbMessaging.configure(
-      onBackgroundMessage: AppState.onBackgroundMessage,
       onMessage: (Map<String, dynamic> json) async {
-        print('fbMessaging@message -> $json');
+        var value = JsonEncoder().convert(json);
+        debugPrint('fbMessaging@message -> $value');
+      },
+      onLaunch: (Map<String, dynamic> json) async {
+        print('----> onLaunch: $json');
+      },
+      onResume: (Map<String, dynamic> json) async {
+        print('----> onResume: $json');
       },
     );
     fbMessaging.requestNotificationPermissions();
@@ -68,6 +74,7 @@ class AppState extends ChangeNotifier {
   Future<void> _registerFcmToken() async {
     var completer = Completer();
     var token = await fbMessaging.getToken();
+    print('FCM Token ---> $token');
     this.token = token;
 
     qiscus.registerDeviceToken(
@@ -84,25 +91,20 @@ class AppState extends ChangeNotifier {
 
   Future<QAccount> setUser(String userId, String userKey) async {
     var account = await _setUser(userId, userKey);
-    print('done setting user: $account');
     await _registerFcmToken();
-    print('done setting fcm token');
     return account;
+  }
+
+  Future<void> signOut() async {
+    await qiscus.removeDeviceToken$(token: this.token);
+    await qiscus.clearUser$();
   }
 
   @override
   void dispose() {
-    if (this.token != null) {
-      qiscus.removeDeviceToken(
-        token: this.token,
-        callback: (_isChanged, _err) {
-          //
-        },
-      );
-    }
-    qiscus.clearUser(callback: (err) {
-      print('error while clearing user data');
-    });
     super.dispose();
+    signOut().catchError(() {
+      // do nothing
+    });
   }
 }

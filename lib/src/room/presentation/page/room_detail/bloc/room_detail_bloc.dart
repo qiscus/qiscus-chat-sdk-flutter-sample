@@ -30,28 +30,20 @@ class RoomDetailBloc extends Bloc<RoomDetailBlocEvent, RoomDetailBlocState> {
 
   @override
   Stream<RoomDetailBlocState> mapEventToState(event) async* {
-    //
     yield* event.when(
       initialize: () async* {
         yield state;
       },
       load: (roomId) async* {
-        final controller = StreamController<QChatRoom>();
-
-        qiscus.getChatRooms(
-          roomIds: [roomId],
-          callback: (rooms, error) {
-            if (error == null && rooms.first != null) {
-              controller.sink.add(rooms.first);
-            } else {
-              controller.sink.addError(error);
-            }
-            controller.close();
-          },
-        );
-
-        yield* controller.stream
-            .asyncMap((room) => RoomDetailBlocState.ready(room));
+        try {
+          final room = await qiscus.getChatRooms$(
+            roomIds: [roomId],
+            showParticipants: true,
+          );
+          yield RoomDetailBlocState.ready(room.first);
+        } catch (error) {
+          print(error);
+        }
       },
     );
   }

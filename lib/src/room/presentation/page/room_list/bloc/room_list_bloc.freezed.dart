@@ -33,20 +33,17 @@ mixin _$RoomListBlocEvent {
     @required Result initialize(),
     @required Result load(int page, int limit),
   });
-
   @optionalTypeArgs
   Result maybeWhen<Result extends Object>({
     Result initialize(),
     Result load(int page, int limit),
     @required Result orElse(),
   });
-
   @optionalTypeArgs
   Result map<Result extends Object>({
     @required Result initialize(_EventInitialize value),
     @required Result load(_EventLoad value),
   });
-
   @optionalTypeArgs
   Result maybeMap<Result extends Object>({
     Result initialize(_EventInitialize value),
@@ -66,7 +63,6 @@ class _$RoomListBlocEventCopyWithImpl<$Res>
   _$RoomListBlocEventCopyWithImpl(this._value, this._then);
 
   final RoomListBlocEvent _value;
-
   // ignore: unused_field
   final $Res Function(RoomListBlocEvent) _then;
 }
@@ -163,7 +159,6 @@ abstract class _$EventLoadCopyWith<$Res> {
   factory _$EventLoadCopyWith(
           _EventLoad value, $Res Function(_EventLoad) then) =
       __$EventLoadCopyWithImpl<$Res>;
-
   $Res call({int page, int limit});
 }
 
@@ -276,9 +271,7 @@ abstract class _EventLoad implements RoomListBlocEvent {
   const factory _EventLoad([int page, int limit]) = _$_EventLoad;
 
   int get page;
-
   int get limit;
-
   _$EventLoadCopyWith<_EventLoad> get copyWith;
 }
 
@@ -309,20 +302,17 @@ mixin _$RoomListBlocState {
     @required Result ready(List<QChatRoom> rooms),
     @required Result loading(List<QChatRoom> rooms),
   });
-
   @optionalTypeArgs
   Result maybeWhen<Result extends Object>({
     Result ready(List<QChatRoom> rooms),
     Result loading(List<QChatRoom> rooms),
     @required Result orElse(),
   });
-
   @optionalTypeArgs
   Result map<Result extends Object>({
     @required Result ready(_RoomListBlocStateReady value),
     @required Result loading(_RoomListBlocStateLoading value),
   });
-
   @optionalTypeArgs
   Result maybeMap<Result extends Object>({
     Result ready(_RoomListBlocStateReady value),
@@ -337,7 +327,6 @@ abstract class $RoomListBlocStateCopyWith<$Res> {
   factory $RoomListBlocStateCopyWith(
           RoomListBlocState value, $Res Function(RoomListBlocState) then) =
       _$RoomListBlocStateCopyWithImpl<$Res>;
-
   $Res call({List<QChatRoom> rooms});
 }
 
@@ -346,7 +335,6 @@ class _$RoomListBlocStateCopyWithImpl<$Res>
   _$RoomListBlocStateCopyWithImpl(this._value, this._then);
 
   final RoomListBlocState _value;
-
   // ignore: unused_field
   final $Res Function(RoomListBlocState) _then;
 
@@ -365,7 +353,6 @@ abstract class _$RoomListBlocStateReadyCopyWith<$Res>
   factory _$RoomListBlocStateReadyCopyWith(_RoomListBlocStateReady value,
           $Res Function(_RoomListBlocStateReady) then) =
       __$RoomListBlocStateReadyCopyWithImpl<$Res>;
-
   @override
   $Res call({List<QChatRoom> rooms});
 }
@@ -475,7 +462,6 @@ abstract class _RoomListBlocStateReady implements RoomListBlocState {
 
   @override
   List<QChatRoom> get rooms;
-
   @override
   _$RoomListBlocStateReadyCopyWith<_RoomListBlocStateReady> get copyWith;
 }
@@ -485,7 +471,6 @@ abstract class _$RoomListBlocStateLoadingCopyWith<$Res>
   factory _$RoomListBlocStateLoadingCopyWith(_RoomListBlocStateLoading value,
           $Res Function(_RoomListBlocStateLoading) then) =
       __$RoomListBlocStateLoadingCopyWithImpl<$Res>;
-
   @override
   $Res call({List<QChatRoom> rooms});
 }
@@ -596,7 +581,6 @@ abstract class _RoomListBlocStateLoading implements RoomListBlocState {
 
   @override
   List<QChatRoom> get rooms;
-
   @override
   _$RoomListBlocStateLoadingCopyWith<_RoomListBlocStateLoading> get copyWith;
 }

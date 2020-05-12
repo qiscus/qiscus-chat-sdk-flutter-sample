@@ -91,16 +91,12 @@ class _ChatState extends State<ChatPage> {
             ),
           ),
           actions: <Widget>[
-            PopupMenuButton(
-              itemBuilder: (ctx) => <PopupMenuEntry>[
-                PopupMenuItem(
-                  child: GestureDetector(
-                    onTap: () {
-                      final roomId = widget.roomId;
-                      Navigator.pushNamed(context, '/room/$roomId/detail');
-                    },
-                    child: Text('Detail'),
-                  ),
+            PopupMenuButton<ChatPageMenu>(
+              onSelected: _onSelectMenu,
+              itemBuilder: (ctx) => <PopupMenuEntry<ChatPageMenu>>[
+                PopupMenuItem<ChatPageMenu>(
+                  value: ChatPageMenu.detail,
+                  child: Text('Detail'),
                 )
               ],
             )
@@ -240,6 +236,7 @@ class _ChatState extends State<ChatPage> {
   }
 
   Widget _messageList(BuildContext ctx) {
+    var roomId = widget.roomId;
     return Expanded(
       child: NotificationListener<ScrollNotification>(
         onNotification: (notification) {
@@ -247,7 +244,7 @@ class _ChatState extends State<ChatPage> {
           return true;
         },
         child: Consumer<MessageState>(builder: (_, state, __) {
-          var reversed = state.messages.reversed;
+          var reversed = state.messageForChatRoomId(roomId).reversed;
           return ListView.separated(
             separatorBuilder: (_, __) {
               return Divider(color: Colors.grey, height: 1.0);
@@ -264,4 +261,19 @@ class _ChatState extends State<ChatPage> {
       ),
     );
   }
+
+  void _onSelectMenu(ChatPageMenu value) {
+    var roomId = widget.roomId;
+    switch (value) {
+      case ChatPageMenu.detail:
+        Navigator.pushNamed(context, '/room/$roomId/detail');
+        break;
+      default:
+        break;
+    }
+  }
+}
+
+enum ChatPageMenu {
+  detail,
 }

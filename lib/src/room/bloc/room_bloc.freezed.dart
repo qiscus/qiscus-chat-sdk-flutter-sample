@@ -32,20 +32,17 @@ mixin _$RoomBlocEvent {
     @required Result getRoomInfo(int roomId),
     @required Result getRoomList(),
   });
-
   @optionalTypeArgs
   Result maybeWhen<Result extends Object>({
     Result getRoomInfo(int roomId),
     Result getRoomList(),
     @required Result orElse(),
   });
-
   @optionalTypeArgs
   Result map<Result extends Object>({
     @required Result getRoomInfo(_$GetRoomInfoEvent value),
     @required Result getRoomList(_$GetRoomList value),
   });
-
   @optionalTypeArgs
   Result maybeMap<Result extends Object>({
     Result getRoomInfo(_$GetRoomInfoEvent value),
@@ -65,7 +62,6 @@ class _$RoomBlocEventCopyWithImpl<$Res>
   _$RoomBlocEventCopyWithImpl(this._value, this._then);
 
   final RoomBlocEvent _value;
-
   // ignore: unused_field
   final $Res Function(RoomBlocEvent) _then;
 }
@@ -74,7 +70,6 @@ abstract class _$$GetRoomInfoEventCopyWith<$Res> {
   factory _$$GetRoomInfoEventCopyWith(
           _$GetRoomInfoEvent value, $Res Function(_$GetRoomInfoEvent) then) =
       __$$GetRoomInfoEventCopyWithImpl<$Res>;
-
   $Res call({int roomId});
 }
 
@@ -180,7 +175,6 @@ abstract class _$GetRoomInfoEvent implements RoomBlocEvent {
   const factory _$GetRoomInfoEvent(int roomId) = _$_$GetRoomInfoEvent;
 
   int get roomId;
-
   _$$GetRoomInfoEventCopyWith<_$GetRoomInfoEvent> get copyWith;
 }
 
@@ -295,7 +289,6 @@ abstract class $RoomBlocStateCopyWith<$Res> {
   factory $RoomBlocStateCopyWith(
           RoomBlocState value, $Res Function(RoomBlocState) then) =
       _$RoomBlocStateCopyWithImpl<$Res>;
-
   $Res call({Iterable<QChatRoom> rooms});
 }
 
@@ -304,7 +297,6 @@ class _$RoomBlocStateCopyWithImpl<$Res>
   _$RoomBlocStateCopyWithImpl(this._value, this._then);
 
   final RoomBlocState _value;
-
   // ignore: unused_field
   final $Res Function(RoomBlocState) _then;
 
@@ -323,7 +315,6 @@ abstract class _$RoomBlocStateCopyWith<$Res>
   factory _$RoomBlocStateCopyWith(
           _RoomBlocState value, $Res Function(_RoomBlocState) then) =
       __$RoomBlocStateCopyWithImpl<$Res>;
-
   @override
   $Res call({Iterable<QChatRoom> rooms});
 }
@@ -381,7 +372,6 @@ abstract class _RoomBlocState implements RoomBlocState {
 
   @override
   Iterable<QChatRoom> get rooms;
-
   @override
   _$RoomBlocStateCopyWith<_RoomBlocState> get copyWith;
 }

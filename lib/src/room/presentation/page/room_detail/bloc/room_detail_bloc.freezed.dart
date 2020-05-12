@@ -32,20 +32,17 @@ mixin _$RoomDetailBlocEvent {
     @required Result initialize(),
     @required Result load(int roomId),
   });
-
   @optionalTypeArgs
   Result maybeWhen<Result extends Object>({
     Result initialize(),
     Result load(int roomId),
     @required Result orElse(),
   });
-
   @optionalTypeArgs
   Result map<Result extends Object>({
     @required Result initialize(_EventInitialize value),
     @required Result load(_EventLoad value),
   });
-
   @optionalTypeArgs
   Result maybeMap<Result extends Object>({
     Result initialize(_EventInitialize value),
@@ -65,7 +62,6 @@ class _$RoomDetailBlocEventCopyWithImpl<$Res>
   _$RoomDetailBlocEventCopyWithImpl(this._value, this._then);
 
   final RoomDetailBlocEvent _value;
-
   // ignore: unused_field
   final $Res Function(RoomDetailBlocEvent) _then;
 }
@@ -162,7 +158,6 @@ abstract class _$EventLoadCopyWith<$Res> {
   factory _$EventLoadCopyWith(
           _EventLoad value, $Res Function(_EventLoad) then) =
       __$EventLoadCopyWithImpl<$Res>;
-
   $Res call({int roomId});
 }
 
@@ -267,7 +262,6 @@ abstract class _EventLoad implements RoomDetailBlocEvent {
   const factory _EventLoad(int roomId) = _$_EventLoad;
 
   int get roomId;
-
   _$EventLoadCopyWith<_EventLoad> get copyWith;
 }
 
@@ -294,20 +288,17 @@ mixin _$RoomDetailBlocState {
     @required Result loading(),
     @required Result ready(QChatRoom room),
   });
-
   @optionalTypeArgs
   Result maybeWhen<Result extends Object>({
     Result loading(),
     Result ready(QChatRoom room),
     @required Result orElse(),
   });
-
   @optionalTypeArgs
   Result map<Result extends Object>({
     @required Result loading(_StateLoading value),
     @required Result ready(_StateReady value),
   });
-
   @optionalTypeArgs
   Result maybeMap<Result extends Object>({
     Result loading(_StateLoading value),
@@ -327,7 +318,6 @@ class _$RoomDetailBlocStateCopyWithImpl<$Res>
   _$RoomDetailBlocStateCopyWithImpl(this._value, this._then);
 
   final RoomDetailBlocState _value;
-
   // ignore: unused_field
   final $Res Function(RoomDetailBlocState) _then;
 }
@@ -424,7 +414,6 @@ abstract class _$StateReadyCopyWith<$Res> {
   factory _$StateReadyCopyWith(
           _StateReady value, $Res Function(_StateReady) then) =
       __$StateReadyCopyWithImpl<$Res>;
-
   $Res call({QChatRoom room});
 }
 
@@ -530,6 +519,5 @@ abstract class _StateReady implements RoomDetailBlocState {
   const factory _StateReady(QChatRoom room) = _$_StateReady;
 
   QChatRoom get room;
-
   _$StateReadyCopyWith<_StateReady> get copyWith;
 }

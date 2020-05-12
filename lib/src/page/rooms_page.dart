@@ -5,6 +5,11 @@ import 'package:provider/provider.dart';
 import 'package:qiscus_chat_sample/src/state/room_state.dart';
 import 'package:qiscus_chat_sample/src/state/state.dart';
 
+enum MenuItem {
+  profile,
+  signOut,
+}
+
 class RoomListPage extends StatefulWidget {
   @override
   State<StatefulWidget> createState() => _RoomListState();
@@ -13,6 +18,7 @@ class RoomListPage extends StatefulWidget {
 class _RoomListState extends State<RoomListPage> {
   @override
   Widget build(BuildContext context) {
+    var userId = context.select((AppState s) => s.account.id);
     return Scaffold(
       appBar: AppBar(
         leading: Consumer<AppState>(
@@ -33,36 +39,27 @@ class _RoomListState extends State<RoomListPage> {
         actions: <Widget>[
           PopupMenuButton(
             onSelected: (_item) {
-              print('on item selected: $_item');
-            },
-            onCanceled: () {
-              print('on cancel');
+              switch (_item) {
+                case MenuItem.profile:
+                  Navigator.pushNamed(context, '/profile/$userId');
+                  break;
+                case MenuItem.signOut:
+                  context.read<AppState>().signOut();
+                  break;
+                default:
+                  return;
+              }
             },
             itemBuilder: (ctx) {
-              return <PopupMenuEntry>[
-                PopupMenuItem(child: Text('Something')),
-                PopupMenuItem(
-                  child: GestureDetector(
-                    child: Text('Profile'),
-                    onTap: () {
-                      return Scaffold.of(ctx).showSnackBar(SnackBar(
-                        content: Text('Not yet implemented'),
-                        duration: const Duration(milliseconds: 500),
-                        action: SnackBarAction(
-                          label: 'Close',
-                          onPressed: () =>
-                              Scaffold.of(ctx).hideCurrentSnackBar(),
-                        ),
-                      ));
-                    },
-                  ),
+              return <PopupMenuEntry<MenuItem>>[
+                PopupMenuItem<MenuItem>(
+                  value: MenuItem.profile,
+                  child: Text('Profile'),
                 ),
-                PopupMenuItem(
-                  child: GestureDetector(
-                    onTap: () => Navigator.pushReplacementNamed(ctx, '/login'),
-                    child: Text('Logout'),
-                  ),
-                )
+                PopupMenuItem<MenuItem>(
+                  value: MenuItem.signOut,
+                  child: Text('Sign Out'),
+                ),
               ];
             },
           ),

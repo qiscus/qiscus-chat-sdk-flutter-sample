@@ -29,6 +29,10 @@ class MessageState extends ChangeNotifier {
   List<QMessage> get messages => _messages.values.toList()
     ..sort((m1, m2) => m1.timestamp.compareTo(m2.timestamp));
 
+  List<QMessage> messageForChatRoomId(int id) {
+    return messages.where((r) => r.chatRoomId == id).toList();
+  }
+
   Future<QMessage> submit({
     @required int roomId,
     @required String message,
