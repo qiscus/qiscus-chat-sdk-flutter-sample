@@ -2,15 +2,15 @@ import 'package:fluro/fluro.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:provider/provider.dart';
-import 'package:qiscus_chat_sample/src/page/login_page.dart';
-import 'package:qiscus_chat_sample/src/page/page.dart';
-import 'package:qiscus_chat_sample/src/room/presentation/page/room_detail/room_detail.dart';
-import 'package:qiscus_chat_sample/src/state/app_state.dart';
-import 'package:qiscus_chat_sample/src/state/room_state.dart';
+import 'package:qiscus_chat_sample/page/login_page.dart';
+import 'package:qiscus_chat_sample/page/page.dart';
+import 'package:qiscus_chat_sample/room/presentation/page/room_detail/room_detail.dart';
+import 'package:qiscus_chat_sample/state/app_state.dart';
+import 'package:qiscus_chat_sample/state/room_state.dart';
 
-import 'src/page/chat_page.dart';
-import 'src/state/message_state.dart';
-import 'src/user/presentation/page/profile/profile_page.dart';
+import 'page/chat_page.dart';
+import 'state/message_state.dart';
+import 'user/presentation/page/profile/profile_page.dart';
 
 void main() {
   BlocSupervisor.delegate = SimpleBlocDelegate();
@@ -35,7 +35,7 @@ class MyApp extends StatefulWidget {
 extension on Router {
   handle(
     String path, {
-    Widget Function(BuildContext, Map<String, List<String>>) handler,
+    @required Widget Function(BuildContext, Map<String, List<String>>) handler,
   }) {
     define(
       path,

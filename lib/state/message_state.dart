@@ -3,7 +3,7 @@ import 'dart:collection';
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
-import 'package:qiscus_chat_sample/src/state/room_state.dart';
+import 'package:qiscus_chat_sample/state/room_state.dart';
 import 'package:qiscus_chat_sdk/qiscus_chat_sdk.dart';
 
 import 'app_state.dart';

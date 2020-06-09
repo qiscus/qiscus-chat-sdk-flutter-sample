@@ -6,6 +6,12 @@ import 'package:qiscus_chat_sdk/qiscus_chat_sdk.dart';
 
 import 'app_state.dart';
 
+class Room {
+  Room(this.time, this.data);
+  DateTime time;
+  QChatRoom data;
+}
+
 class RoomState extends ChangeNotifier {
   RoomState({@required this.appState});
 
@@ -24,12 +30,12 @@ class RoomState extends ChangeNotifier {
     notifyListeners();
   }
 
-  HashMap<int, QChatRoom> _rooms = HashMap(hashCode: (key) => key.hashCode);
+  HashMap<int, Room> _rooms = HashMap(hashCode: (key) => key.hashCode);
 
-  Iterable<QChatRoom> get rooms => _rooms.values;
+  Iterable<Room> get rooms => _rooms.values;
 
-  set rooms(List<QChatRoom> rooms) {
-    var res = rooms.map((room) => MapEntry(room.id, room));
+  set rooms(List<Room> rooms) {
+    var res = rooms.map((room) => MapEntry(room.data.id, room));
     _rooms.addEntries(res);
     notifyListeners();
   }
@@ -46,7 +52,15 @@ class RoomState extends ChangeNotifier {
         }
 
         this.currentRoom = room;
-        this._rooms.putIfAbsent(room.id, () => room);
+        this._rooms.update(
+          room.id,
+          (r) {
+            r.time = DateTime.now();
+            return r;
+          },
+          ifAbsent: () => Room(DateTime.now(), room),
+        );
+
         subscribeUser(userId);
         markAsRead(room.id, room.lastMessage?.id);
       },
@@ -61,7 +75,9 @@ class RoomState extends ChangeNotifier {
       callback: (room, messages, error) {
         if (error != null) return completer.completeError(error);
         this.currentRoom = room;
-        this._rooms.putIfAbsent(room.id, () => room);
+
+        addOrUpdateRoom(room);
+
         completer.complete(room);
         markAsRead(room.id, room.lastMessage?.id);
       },
@@ -69,8 +85,25 @@ class RoomState extends ChangeNotifier {
     return completer.future;
   }
 
+  Room addOrUpdateRoom(QChatRoom room) {
+    return this._rooms.update(room.id, (r) {
+      r.time = DateTime.now();
+      r.data = room;
+      return r;
+    }, ifAbsent: () => Room(DateTime.now(), room));
+  }
+
+  void clearUnreadCount(int roomId) {
+    this._rooms.update(roomId, (room) {
+      room.data.unreadCount = 0;
+      return room;
+    });
+    notifyListeners();
+  }
+
   Future<void> markAsRead(int roomId, int messageId) async {
     var completer = Completer<void>();
+    clearUnreadCount(roomId);
     qiscus.markAsRead(
       roomId: roomId,
       messageId: messageId,
@@ -87,7 +120,7 @@ class RoomState extends ChangeNotifier {
     qiscus.getAllChatRooms(callback: (rooms, error) {
       if (error != null) return completer.completeError(error);
 
-      var _rooms = rooms.map((r) => MapEntry(r.id, r));
+      var _rooms = rooms.map((r) => MapEntry(r.id, Room(DateTime.now(), r)));
       this._rooms.addEntries(_rooms);
 
       notifyListeners();
@@ -110,6 +143,31 @@ class RoomState extends ChangeNotifier {
 
   final _typing$ = StreamController<Typing>.broadcast();
 
+  void Function() _subscribed;
+  void Function() subscribeRoom() {
+    print('subscribe room');
+    _subscribed = qiscus.onMessageReceived((message) {
+      // update unread count and update room timestamp
+
+      print('on message received ${message.chatRoomId} ${message.text}');
+
+      var roomId = message.chatRoomId;
+      this._rooms.update(roomId, (value) {
+        print('old room found ${value.data.id}');
+        value.time = DateTime.now();
+        value.data.unreadCount++;
+        value.data.lastMessage = message;
+        return value;
+      });
+      notifyListeners();
+    });
+    return _subscribed;
+  }
+
+  void unsubscribeRoom() {
+    this._subscribed?.call();
+  }
+
   Stream<Typing> get onTyping {
     Timer _timer;
     var unsubscribe = qiscus.onUserTyping((userId, roomId, isTyping) {
@@ -122,7 +180,7 @@ class RoomState extends ChangeNotifier {
         qiscus.publishTyping(roomId: roomId, isTyping: false);
       });
     });
-    _typing$.onCancel = () => unsubscribe();
+    _typing$.onCancel = unsubscribe;
     return _typing$.stream.distinct();
   }
 

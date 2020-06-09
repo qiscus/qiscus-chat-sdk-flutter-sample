@@ -1,7 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:qiscus_chat_sample/src/state/app_state.dart';
+import 'package:qiscus_chat_sample/state/app_state.dart';
 
 class LoginPage extends StatefulWidget {
   @override
@@ -11,7 +11,7 @@ class LoginPage extends StatefulWidget {
 class _LoginState extends State<LoginPage> {
   var _loginFormKey = GlobalKey<FormState>();
   var _appIdController = TextEditingController(text: 'sdksample');
-  var _userIdController = TextEditingController(text: 'guest-1002');
+  var _userIdController = TextEditingController(text: 'guest-1003');
   var _userKeyController = TextEditingController(text: 'passkey');
 
   var isLoggingIn = false;

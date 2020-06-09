@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:convert';
 
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
@@ -7,15 +6,15 @@ import 'package:qiscus_chat_sdk/qiscus_chat_sdk.dart';
 
 class AppState extends ChangeNotifier {
   static Future<void> onBackgroundMessage(Map<String, dynamic> json) async {
-    print('fbMessaging::@background-message -> $json');
+//    print('fbMessaging::@background-message -> $json');
   }
 
   AppState() {
 //    qiscus.enableDebugMode(enable: true, level: QLogLevel.verbose);
     fbMessaging.configure(
       onMessage: (Map<String, dynamic> json) async {
-        var value = JsonEncoder().convert(json);
-        debugPrint('fbMessaging@message -> $value');
+//        var value = JsonEncoder().convert(json);
+//        debuPrint('fbMessaging@message -> $value');
       },
       onLaunch: (Map<String, dynamic> json) async {
         print('----> onLaunch: $json');
@@ -46,6 +45,7 @@ class AppState extends ChangeNotifier {
 
   Future<void> setup(String appId) {
     var completer = Completer<void>();
+//    qiscus.enableDebugMode(enable: true);
     qiscus.setup(appId, callback: (err) {
       if (err != null) return completer.completeError(err);
 

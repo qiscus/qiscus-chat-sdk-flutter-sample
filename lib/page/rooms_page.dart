@@ -1,9 +1,10 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:provider/provider.dart';
-import 'package:qiscus_chat_sample/src/state/room_state.dart';
-import 'package:qiscus_chat_sample/src/state/state.dart';
+import 'package:qiscus_chat_sample/state/room_state.dart';
+import 'package:qiscus_chat_sample/state/state.dart';
 
 enum MenuItem {
   profile,
@@ -70,13 +71,16 @@ class _RoomListState extends State<RoomListPage> {
           Expanded(
             child: Consumer<RoomState>(
               builder: (_, state, __) {
-                var rooms = state.rooms.toList() //
-                  ..sort((r1, r2) => r1.unreadCount.compareTo(r2.unreadCount));
+                var _rooms = state.rooms //
+                    .toList()
+                      ..sort((r1, r2) => r2.time.compareTo(r1.time));
+                var rooms = _rooms.map((it) => it.data).toList();
                 return ListView.separated(
                   itemBuilder: (_, index) {
                     var room = rooms.elementAt(index);
                     return ListTile(
                       onTap: () {
+                        state.clearUnreadCount(room.id);
                         Navigator.pushNamed(context, '/room/${room.id}');
                       },
                       leading: CircleAvatar(
@@ -139,6 +143,14 @@ class _RoomListState extends State<RoomListPage> {
     scheduleMicrotask(() async {
       var roomState = Provider.of<RoomState>(context, listen: false);
       await roomState.getRooms();
+      roomState.subscribeRoom();
     });
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
+    var roomState = Provider.of<RoomState>(context, listen: false);
+    roomState.unsubscribeRoom();
   }
 }

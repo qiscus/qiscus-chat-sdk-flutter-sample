@@ -1,7 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:qiscus_chat_sample/src/state/state.dart';
+import 'package:qiscus_chat_sample/state/state.dart';
 import 'package:qiscus_chat_sdk/qiscus_chat_sdk.dart';
 import 'package:timeago/timeago.dart' as timeago;
 

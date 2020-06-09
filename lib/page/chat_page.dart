@@ -4,9 +4,9 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 import 'package:provider/provider.dart';
-import 'package:qiscus_chat_sample/src/state/state.dart';
-import 'package:qiscus_chat_sample/src/widget/app_bar.dart';
-import 'package:qiscus_chat_sample/src/widget/chat_bubble.dart';
+import 'package:qiscus_chat_sample/state/state.dart';
+import 'package:qiscus_chat_sample/widget/app_bar.dart';
+import 'package:qiscus_chat_sample/widget/chat_bubble.dart';
 import 'package:rxdart/rxdart.dart';
 
 class ChatPage extends StatefulWidget {

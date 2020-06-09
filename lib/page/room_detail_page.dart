@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 import 'package:provider/provider.dart';
-import 'package:qiscus_chat_sample/src/state/state.dart';
+import 'package:qiscus_chat_sample/state/state.dart';
 
 class RoomDetailPage extends StatefulWidget {
   const RoomDetailPage({Key key, @required this.roomId}) : super(key: key);
