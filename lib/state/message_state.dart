@@ -37,11 +37,8 @@ class MessageState extends ChangeNotifier {
     @required int roomId,
     @required String message,
   }) async {
-    var nextMessage = QMessage.create(
-      text: message,
-      chatRoomId: roomId,
-      sender: appState.account.asUser(),
-    );
+    var nextMessage = qiscus.generateMessage(chatRoomId: roomId, text: message);
+
     _messages.update(
       nextMessage.uniqueId,
       (_) => nextMessage,
@@ -148,12 +145,12 @@ class MessageState extends ChangeNotifier {
 
   Future<void> sendFile(File file) async {
     var completer = Completer<void>();
-    var message = QMessage.createAttachment(
-      text: 'attachment',
+    var message = qiscus.generateFileAttachmentMessage(
       chatRoomId: roomState.currentRoomId,
-      sender: appState.account.asUser(),
-      file: file,
+      caption: 'attachment',
+      url: file.path,
     );
+
     qiscus.sendFileMessage(
       message: message,
       file: file,

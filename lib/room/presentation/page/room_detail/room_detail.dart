@@ -117,7 +117,10 @@ class _RoomDetailState extends State<RoomDetail> {
                             ...state.when(
                               loading: () => [Container()],
                               ready: (r) => <Widget>[
-                                IconButton(
+                                Container(),
+
+                                // TODO: FIXME: Make me interactive
+                                /*IconButton(
                                   icon: Icon(
                                     Icons.edit,
                                     color: Colors.white,
@@ -130,7 +133,7 @@ class _RoomDetailState extends State<RoomDetail> {
                                     color: Colors.white,
                                   ),
                                   onPressed: () {},
-                                ),
+                                ),*/
                               ],
                             ),
                           ],
@@ -140,49 +143,156 @@ class _RoomDetailState extends State<RoomDetail> {
                   ],
                 ),
               ),
-              Container(
-                width: double.infinity,
-                color: Color.fromRGBO(250, 250, 250, 1),
-                child: Padding(
-                  padding: const EdgeInsets.all(8.0),
-                  child: Text(
-                    'PARTICIPANTS',
-                    style: TextStyle(
-                      fontWeight: FontWeight.w600,
-                      color: Color.fromRGBO(120, 120, 120, 1),
-                    ),
-                  ),
-                ),
-              ),
-              Expanded(
-                child: state.when(
-                  loading: () => Container(),
-                  ready: (r) {
-                    return ListView.builder(
-                      itemCount: r.participants.length,
-                      itemBuilder: (context, index) => ListTile(
-                        leading: CircleAvatar(
-                          backgroundImage: Image.network(
-                            r.participants[index].avatarUrl,
-                          ).image,
-                        ),
-                        title: Text(r.participants[index].name),
-                        trailing: IconButton(
-                          icon: Icon(
-                            Icons.remove_circle_outline,
-                            color: Colors.redAccent,
-                          ),
-                          onPressed: () {},
-                        ),
-                      ),
-                    );
-                  },
-                ),
+              ...state.when(
+                loading: () => [Center(child: CircularProgressIndicator())],
+                ready: (room) {
+                  if (room.type != QRoomType.single) {
+                    return buildGroupInfo(context, state: state, bloc: bloc);
+                  } else {
+                    return buildSingleInfo(context, state: state);
+                  }
+                },
               ),
             ],
+          ),
+          floatingActionButton: state.when(
+            loading: () => Container(),
+            ready: (room) => room.type != QRoomType.single
+                ? FloatingActionButton(
+                    child: Icon(Icons.add),
+                    onPressed: () {
+                      Navigator.pushNamed(
+                        context,
+                        '/room/${room.id}/add_participant',
+                      );
+                    },
+                  )
+                : Container(),
           ),
         );
       },
     );
   }
+}
+
+List<Widget> buildGroupInfo(
+  BuildContext context, {
+  @required RoomDetailBlocState state,
+  @required RoomDetailBloc bloc,
+}) {
+  return [
+    Container(
+      width: double.infinity,
+      child: Padding(
+        padding: const EdgeInsets.all(8.0),
+        child: Text(
+          'PARTICIPANTS',
+          style: TextStyle(
+            fontWeight: FontWeight.w600,
+            color: Color.fromRGBO(120, 120, 120, 1),
+          ),
+        ),
+      ),
+    ),
+    Expanded(
+      child: BlocBuilder<RoomDetailBloc, RoomDetailBlocState>(
+        bloc: bloc,
+        builder: (context, state) => state.when(
+          loading: () => Container(),
+          ready: (r) {
+            return ListView.builder(
+              itemCount: r.participants.length,
+              itemBuilder: (context, index) {
+                return ListTile(
+                  leading: CircleAvatar(
+                    backgroundImage: Image.network(
+                      r.participants[index].avatarUrl,
+                    ).image,
+                  ),
+                  title: Text(r.participants[index].name),
+                  trailing: IconButton(
+                    icon: Icon(
+                      Icons.remove_circle_outline,
+                      color: Colors.redAccent,
+                    ),
+                    onPressed: () {
+                      bloc.add(RoomDetailBlocEvent.removePaticipant(
+                        roomId: r.id,
+                        userId: r.participants[index].id,
+                      ));
+                    },
+                  ),
+                );
+              },
+            );
+          },
+        ),
+      ),
+    ),
+  ];
+}
+
+List<Widget> buildSingleInfo(
+  BuildContext context, {
+  @required RoomDetailBlocState state,
+}) {
+  return [
+    Container(
+      width: double.infinity,
+      // color: Color.fromRGBO(250, 250, 250, 1),
+      child: Padding(
+        padding: const EdgeInsets.all(8.0),
+        child: Text(
+          'INFORMATION',
+          style: TextStyle(
+            fontWeight: FontWeight.w600,
+            color: Color.fromRGBO(120, 120, 120, 1),
+          ),
+        ),
+      ),
+    ),
+    Expanded(
+      child: Padding(
+        padding: const EdgeInsets.only(left: 10, right: 10),
+        child: Column(
+          children: <Widget>[
+            Container(
+              height: 40,
+              child: Row(
+                children: <Widget>[
+                  Icon(Icons.person, color: Colors.grey),
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.only(left: 10),
+                      child: state.when(
+                        loading: () => Text('Loading...'),
+                        ready: (user) => Text(user.name),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Container(
+              height: 40,
+              child: Row(
+                children: <Widget>[
+                  Icon(Icons.credit_card, color: Colors.grey),
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.only(left: 10),
+                      child: state.when(
+                        loading: () => Text('Loading...'),
+                        ready: (room) => Text(room.name),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    ),
+  ];
 }

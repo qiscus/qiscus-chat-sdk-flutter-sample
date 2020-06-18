@@ -21,6 +21,14 @@ class _$RoomDetailBlocEventTearOff {
       roomId,
     );
   }
+
+  _EvenRemoveParticipant removePaticipant(
+      {@required int roomId, @required String userId}) {
+    return _EvenRemoveParticipant(
+      roomId: roomId,
+      userId: userId,
+    );
+  }
 }
 
 // ignore: unused_element
@@ -31,22 +39,26 @@ mixin _$RoomDetailBlocEvent {
   Result when<Result extends Object>({
     @required Result initialize(),
     @required Result load(int roomId),
+    @required Result removePaticipant(int roomId, String userId),
   });
   @optionalTypeArgs
   Result maybeWhen<Result extends Object>({
     Result initialize(),
     Result load(int roomId),
+    Result removePaticipant(int roomId, String userId),
     @required Result orElse(),
   });
   @optionalTypeArgs
   Result map<Result extends Object>({
     @required Result initialize(_EventInitialize value),
     @required Result load(_EventLoad value),
+    @required Result removePaticipant(_EvenRemoveParticipant value),
   });
   @optionalTypeArgs
   Result maybeMap<Result extends Object>({
     Result initialize(_EventInitialize value),
     Result load(_EventLoad value),
+    Result removePaticipant(_EvenRemoveParticipant value),
     @required Result orElse(),
   });
 }
@@ -104,9 +116,11 @@ class _$_EventInitialize implements _EventInitialize {
   Result when<Result extends Object>({
     @required Result initialize(),
     @required Result load(int roomId),
+    @required Result removePaticipant(int roomId, String userId),
   }) {
     assert(initialize != null);
     assert(load != null);
+    assert(removePaticipant != null);
     return initialize();
   }
 
@@ -115,6 +129,7 @@ class _$_EventInitialize implements _EventInitialize {
   Result maybeWhen<Result extends Object>({
     Result initialize(),
     Result load(int roomId),
+    Result removePaticipant(int roomId, String userId),
     @required Result orElse(),
   }) {
     assert(orElse != null);
@@ -129,9 +144,11 @@ class _$_EventInitialize implements _EventInitialize {
   Result map<Result extends Object>({
     @required Result initialize(_EventInitialize value),
     @required Result load(_EventLoad value),
+    @required Result removePaticipant(_EvenRemoveParticipant value),
   }) {
     assert(initialize != null);
     assert(load != null);
+    assert(removePaticipant != null);
     return initialize(this);
   }
 
@@ -140,6 +157,7 @@ class _$_EventInitialize implements _EventInitialize {
   Result maybeMap<Result extends Object>({
     Result initialize(_EventInitialize value),
     Result load(_EventLoad value),
+    Result removePaticipant(_EvenRemoveParticipant value),
     @required Result orElse(),
   }) {
     assert(orElse != null);
@@ -212,9 +230,11 @@ class _$_EventLoad implements _EventLoad {
   Result when<Result extends Object>({
     @required Result initialize(),
     @required Result load(int roomId),
+    @required Result removePaticipant(int roomId, String userId),
   }) {
     assert(initialize != null);
     assert(load != null);
+    assert(removePaticipant != null);
     return load(roomId);
   }
 
@@ -223,6 +243,7 @@ class _$_EventLoad implements _EventLoad {
   Result maybeWhen<Result extends Object>({
     Result initialize(),
     Result load(int roomId),
+    Result removePaticipant(int roomId, String userId),
     @required Result orElse(),
   }) {
     assert(orElse != null);
@@ -237,9 +258,11 @@ class _$_EventLoad implements _EventLoad {
   Result map<Result extends Object>({
     @required Result initialize(_EventInitialize value),
     @required Result load(_EventLoad value),
+    @required Result removePaticipant(_EvenRemoveParticipant value),
   }) {
     assert(initialize != null);
     assert(load != null);
+    assert(removePaticipant != null);
     return load(this);
   }
 
@@ -248,6 +271,7 @@ class _$_EventLoad implements _EventLoad {
   Result maybeMap<Result extends Object>({
     Result initialize(_EventInitialize value),
     Result load(_EventLoad value),
+    Result removePaticipant(_EvenRemoveParticipant value),
     @required Result orElse(),
   }) {
     assert(orElse != null);
@@ -263,6 +287,138 @@ abstract class _EventLoad implements RoomDetailBlocEvent {
 
   int get roomId;
   _$EventLoadCopyWith<_EventLoad> get copyWith;
+}
+
+abstract class _$EvenRemoveParticipantCopyWith<$Res> {
+  factory _$EvenRemoveParticipantCopyWith(_EvenRemoveParticipant value,
+          $Res Function(_EvenRemoveParticipant) then) =
+      __$EvenRemoveParticipantCopyWithImpl<$Res>;
+  $Res call({int roomId, String userId});
+}
+
+class __$EvenRemoveParticipantCopyWithImpl<$Res>
+    extends _$RoomDetailBlocEventCopyWithImpl<$Res>
+    implements _$EvenRemoveParticipantCopyWith<$Res> {
+  __$EvenRemoveParticipantCopyWithImpl(_EvenRemoveParticipant _value,
+      $Res Function(_EvenRemoveParticipant) _then)
+      : super(_value, (v) => _then(v as _EvenRemoveParticipant));
+
+  @override
+  _EvenRemoveParticipant get _value => super._value as _EvenRemoveParticipant;
+
+  @override
+  $Res call({
+    Object roomId = freezed,
+    Object userId = freezed,
+  }) {
+    return _then(_EvenRemoveParticipant(
+      roomId: roomId == freezed ? _value.roomId : roomId as int,
+      userId: userId == freezed ? _value.userId : userId as String,
+    ));
+  }
+}
+
+class _$_EvenRemoveParticipant implements _EvenRemoveParticipant {
+  const _$_EvenRemoveParticipant({@required this.roomId, @required this.userId})
+      : assert(roomId != null),
+        assert(userId != null);
+
+  @override
+  final int roomId;
+  @override
+  final String userId;
+
+  @override
+  String toString() {
+    return 'RoomDetailBlocEvent.removePaticipant(roomId: $roomId, userId: $userId)';
+  }
+
+  @override
+  bool operator ==(dynamic other) {
+    return identical(this, other) ||
+        (other is _EvenRemoveParticipant &&
+            (identical(other.roomId, roomId) ||
+                const DeepCollectionEquality().equals(other.roomId, roomId)) &&
+            (identical(other.userId, userId) ||
+                const DeepCollectionEquality().equals(other.userId, userId)));
+  }
+
+  @override
+  int get hashCode =>
+      runtimeType.hashCode ^
+      const DeepCollectionEquality().hash(roomId) ^
+      const DeepCollectionEquality().hash(userId);
+
+  @override
+  _$EvenRemoveParticipantCopyWith<_EvenRemoveParticipant> get copyWith =>
+      __$EvenRemoveParticipantCopyWithImpl<_EvenRemoveParticipant>(
+          this, _$identity);
+
+  @override
+  @optionalTypeArgs
+  Result when<Result extends Object>({
+    @required Result initialize(),
+    @required Result load(int roomId),
+    @required Result removePaticipant(int roomId, String userId),
+  }) {
+    assert(initialize != null);
+    assert(load != null);
+    assert(removePaticipant != null);
+    return removePaticipant(roomId, userId);
+  }
+
+  @override
+  @optionalTypeArgs
+  Result maybeWhen<Result extends Object>({
+    Result initialize(),
+    Result load(int roomId),
+    Result removePaticipant(int roomId, String userId),
+    @required Result orElse(),
+  }) {
+    assert(orElse != null);
+    if (removePaticipant != null) {
+      return removePaticipant(roomId, userId);
+    }
+    return orElse();
+  }
+
+  @override
+  @optionalTypeArgs
+  Result map<Result extends Object>({
+    @required Result initialize(_EventInitialize value),
+    @required Result load(_EventLoad value),
+    @required Result removePaticipant(_EvenRemoveParticipant value),
+  }) {
+    assert(initialize != null);
+    assert(load != null);
+    assert(removePaticipant != null);
+    return removePaticipant(this);
+  }
+
+  @override
+  @optionalTypeArgs
+  Result maybeMap<Result extends Object>({
+    Result initialize(_EventInitialize value),
+    Result load(_EventLoad value),
+    Result removePaticipant(_EvenRemoveParticipant value),
+    @required Result orElse(),
+  }) {
+    assert(orElse != null);
+    if (removePaticipant != null) {
+      return removePaticipant(this);
+    }
+    return orElse();
+  }
+}
+
+abstract class _EvenRemoveParticipant implements RoomDetailBlocEvent {
+  const factory _EvenRemoveParticipant(
+      {@required int roomId,
+      @required String userId}) = _$_EvenRemoveParticipant;
+
+  int get roomId;
+  String get userId;
+  _$EvenRemoveParticipantCopyWith<_EvenRemoveParticipant> get copyWith;
 }
 
 class _$RoomDetailBlocStateTearOff {

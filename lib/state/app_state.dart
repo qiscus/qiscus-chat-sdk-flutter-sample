@@ -45,7 +45,7 @@ class AppState extends ChangeNotifier {
 
   Future<void> setup(String appId) {
     var completer = Completer<void>();
-//    qiscus.enableDebugMode(enable: true);
+    qiscus.enableDebugMode(enable: true, level: QLogLevel.verbose);
     qiscus.setup(appId, callback: (err) {
       if (err != null) return completer.completeError(err);
 

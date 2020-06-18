@@ -128,11 +128,10 @@ class _RoomListState extends State<RoomListPage> {
         ],
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () {},
-        child: IconButton(
-          onPressed: () {},
-          icon: Icon(Icons.add),
-        ),
+        onPressed: () {
+          Navigator.pushNamed(context, '/users');
+        },
+        child: Icon(Icons.search),
       ),
     );
   }

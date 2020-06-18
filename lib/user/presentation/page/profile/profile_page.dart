@@ -170,7 +170,7 @@ class _ProfilePageState extends State<ProfilePage> {
               ),
               Container(
                 width: double.infinity,
-                color: Color.fromRGBO(250, 250, 250, 1),
+                // color: Color.fromRGBO(250, 250, 250, 1),
                 child: Padding(
                   padding: const EdgeInsets.all(8.0),
                   child: Text(

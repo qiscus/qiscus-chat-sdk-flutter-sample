@@ -4,6 +4,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:provider/provider.dart';
 import 'package:qiscus_chat_sample/page/login_page.dart';
 import 'package:qiscus_chat_sample/page/page.dart';
+import 'package:qiscus_chat_sample/room/presentation/page/room_add_participant/room_add_participant.dart';
+import 'package:qiscus_chat_sample/room/presentation/page/room_create_list/room_create_list.dart';
 import 'package:qiscus_chat_sample/room/presentation/page/room_detail/room_detail.dart';
 import 'package:qiscus_chat_sample/state/app_state.dart';
 import 'package:qiscus_chat_sample/state/room_state.dart';
@@ -59,7 +61,17 @@ class _MyAppState extends State<MyApp> {
                     roomId: int.parse(args['roomId'][0]),
                     qiscus: appState.qiscus,
                   ))
+          ..handle('/room/:roomId/add_participant',
+              handler: (_, args) => RoomAddParticipant(
+                    roomId: int.parse(args['roomId'][0]),
+                    qiscus: appState.qiscus,
+                  ))
           ..handle('/room', handler: (_, __) => RoomListPage())
+          ..handle('/users',
+              handler: (_, __) => RoomCreateListPage(
+                    qiscus: appState.qiscus,
+                    roomState: roomState,
+                  ))
           ..handle('/profile/:userId',
               handler: (_, args) => ProfilePage(
                     userId: args['userId'][0],
@@ -79,6 +91,15 @@ class _MyAppState extends State<MyApp> {
   );
 
   @override
+  void initState() {
+    super.initState();
+    Future.microtask(() async {
+      await appState.qiscus.setup$('sdksample');
+      await appState.qiscus.setUser$(userId: 'guest-1003', userKey: 'passkey');
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
@@ -90,6 +111,7 @@ class _MyAppState extends State<MyApp> {
         builder: (_, state, __) => MaterialApp(
           title: 'Flutter Demo',
           theme: ThemeData(primarySwatch: Colors.blue),
+//          darkTheme: ThemeData.dark(),
           onGenerateRoute: router.generator,
           initialRoute: '/login',
           debugShowCheckedModeBanner: false,

@@ -11,6 +11,11 @@ abstract class RoomDetailBlocEvent with _$RoomDetailBlocEvent {
   const factory RoomDetailBlocEvent.initialize() = _EventInitialize;
 
   const factory RoomDetailBlocEvent.load(int roomId) = _EventLoad;
+
+  const factory RoomDetailBlocEvent.removePaticipant({
+    @required int roomId,
+    @required String userId,
+  }) = _EvenRemoveParticipant;
 }
 
 @freezed
@@ -44,6 +49,27 @@ class RoomDetailBloc extends Bloc<RoomDetailBlocEvent, RoomDetailBlocState> {
         } catch (error) {
           print(error);
         }
+      },
+      removePaticipant: (roomId, userId) async* {
+        yield* state.when(
+          loading: () async* {
+            yield state;
+          },
+          ready: (room) async* {
+            yield RoomDetailBlocState.loading();
+            print('removing particpant: $userId');
+            var participants = await qiscus.removeParticipants$(
+              roomId: roomId,
+              userIds: [userId],
+            );
+            print('done removing participant: $participants');
+            room.participants = room.participants.where((p) {
+              return !participants.any((id) => p.id == id);
+            }).toList();
+            room.totalParticipants = room.participants.length;
+            yield RoomDetailBlocState.ready(room);
+          },
+        );
       },
     );
   }

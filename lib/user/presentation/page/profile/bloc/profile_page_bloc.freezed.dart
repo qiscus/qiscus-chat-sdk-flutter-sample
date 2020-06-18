@@ -908,14 +908,14 @@ mixin _$ProfilePageState {
   Result when<Result extends Object>({
     @required Result loading(),
     @required Result ready(QAccount user),
-    @required Result uploading(@required QAccount user, double progress),
+    @required Result uploading(QAccount user, double progress),
     @required Result editingName(QAccount user, String name),
   });
   @optionalTypeArgs
   Result maybeWhen<Result extends Object>({
     Result loading(),
     Result ready(QAccount user),
-    Result uploading(@required QAccount user, double progress),
+    Result uploading(QAccount user, double progress),
     Result editingName(QAccount user, String name),
     @required Result orElse(),
   });
@@ -989,7 +989,7 @@ class _$_StateLoading implements _StateLoading {
   Result when<Result extends Object>({
     @required Result loading(),
     @required Result ready(QAccount user),
-    @required Result uploading(@required QAccount user, double progress),
+    @required Result uploading(QAccount user, double progress),
     @required Result editingName(QAccount user, String name),
   }) {
     assert(loading != null);
@@ -1004,7 +1004,7 @@ class _$_StateLoading implements _StateLoading {
   Result maybeWhen<Result extends Object>({
     Result loading(),
     Result ready(QAccount user),
-    Result uploading(@required QAccount user, double progress),
+    Result uploading(QAccount user, double progress),
     Result editingName(QAccount user, String name),
     @required Result orElse(),
   }) {
@@ -1110,7 +1110,7 @@ class _$_StateReady implements _StateReady {
   Result when<Result extends Object>({
     @required Result loading(),
     @required Result ready(QAccount user),
-    @required Result uploading(@required QAccount user, double progress),
+    @required Result uploading(QAccount user, double progress),
     @required Result editingName(QAccount user, String name),
   }) {
     assert(loading != null);
@@ -1125,7 +1125,7 @@ class _$_StateReady implements _StateReady {
   Result maybeWhen<Result extends Object>({
     Result loading(),
     Result ready(QAccount user),
-    Result uploading(@required QAccount user, double progress),
+    Result uploading(QAccount user, double progress),
     Result editingName(QAccount user, String name),
     @required Result orElse(),
   }) {
@@ -1244,7 +1244,7 @@ class _$_StateUploading implements _StateUploading {
   Result when<Result extends Object>({
     @required Result loading(),
     @required Result ready(QAccount user),
-    @required Result uploading(@required QAccount user, double progress),
+    @required Result uploading(QAccount user, double progress),
     @required Result editingName(QAccount user, String name),
   }) {
     assert(loading != null);
@@ -1259,7 +1259,7 @@ class _$_StateUploading implements _StateUploading {
   Result maybeWhen<Result extends Object>({
     Result loading(),
     Result ready(QAccount user),
-    Result uploading(@required QAccount user, double progress),
+    Result uploading(QAccount user, double progress),
     Result editingName(QAccount user, String name),
     @required Result orElse(),
   }) {
@@ -1380,7 +1380,7 @@ class _$_StateEditingName implements _StateEditingName {
   Result when<Result extends Object>({
     @required Result loading(),
     @required Result ready(QAccount user),
-    @required Result uploading(@required QAccount user, double progress),
+    @required Result uploading(QAccount user, double progress),
     @required Result editingName(QAccount user, String name),
   }) {
     assert(loading != null);
@@ -1395,7 +1395,7 @@ class _$_StateEditingName implements _StateEditingName {
   Result maybeWhen<Result extends Object>({
     Result loading(),
     Result ready(QAccount user),
-    Result uploading(@required QAccount user, double progress),
+    Result uploading(QAccount user, double progress),
     Result editingName(QAccount user, String name),
     @required Result orElse(),
   }) {

@@ -40,6 +40,25 @@ class RoomState extends ChangeNotifier {
     notifyListeners();
   }
 
+  HashMap<String, QUser> _users = HashMap(hashCode: (key) => key.hashCode);
+  Iterable<QUser> get users => _users.values;
+  set users(List<QUser> users) {
+    var r = users.map((it) => MapEntry(it.id, it));
+    _users.addEntries(r);
+    notifyListeners();
+  }
+
+  Future<Iterable<QUser>> getUsers({
+    int page,
+    int limit: 20,
+  }) async {
+    print('get users');
+    var users = await qiscus.getUsers$(page: page, limit: limit);
+    this.users = users;
+    print('users.length: ${users.length}');
+    return users;
+  }
+
   Future<QChatRoom> getRoomWithUser({@required String userId}) async {
     final completer = Completer<QChatRoom>();
     qiscus.chatUser(
@@ -145,7 +164,6 @@ class RoomState extends ChangeNotifier {
 
   void Function() _subscribed;
   void Function() subscribeRoom() {
-    print('subscribe room');
     _subscribed = qiscus.onMessageReceived((message) {
       // update unread count and update room timestamp
 
