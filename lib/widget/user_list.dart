@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:qiscus_chat_sdk/extension.dart';
 import 'package:qiscus_chat_sdk/qiscus_chat_sdk.dart';
 
 class UserList extends StatefulWidget {

@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:qiscus_chat_sdk/qiscus_chat_sdk.dart';
+import 'package:qiscus_chat_sdk/extension.dart';
 
 class AppState extends ChangeNotifier {
   static Future<void> onBackgroundMessage(Map<String, dynamic> json) async {
