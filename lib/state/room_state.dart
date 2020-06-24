@@ -89,20 +89,10 @@ class RoomState extends ChangeNotifier {
   }
 
   Future<QChatRoom> getRoomWithId(int roomId) async {
-    final completer = Completer<QChatRoom>();
-    qiscus.getChatRoomWithMessages(
-      roomId: roomId,
-      callback: (room, messages, error) {
-        if (error != null) return completer.completeError(error);
-        this.currentRoom = room;
+    var data = await qiscus.getChatRoomWithMessages$(roomId: roomId);
+    this.currentRoom = addOrUpdateRoom(data.room).data;
 
-        addOrUpdateRoom(room);
-
-        completer.complete(room);
-        markAsRead(room.id, room.lastMessage?.id);
-      },
-    );
-    return completer.future;
+    return this.currentRoom;
   }
 
   Room addOrUpdateRoom(QChatRoom room) {
