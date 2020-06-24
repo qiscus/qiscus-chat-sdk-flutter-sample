@@ -108,7 +108,12 @@ class RoomState extends ChangeNotifier {
   Room addOrUpdateRoom(QChatRoom room) {
     return this._rooms.update(room.id, (r) {
       r.time = DateTime.now();
-      r.data = room;
+      r.data.name = room.name;
+      r.data.participants = room.participants;
+      r.data.avatarUrl = room.avatarUrl;
+      r.data.extras = room.extras;
+      r.data.unreadCount = room.unreadCount;
+      if (room.lastMessage != null) r.data.lastMessage = room.lastMessage;
       return r;
     }, ifAbsent: () => Room(DateTime.now(), room));
   }
