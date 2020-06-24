@@ -45,7 +45,9 @@ class _RoomListState extends State<RoomListPage> {
                   Navigator.pushNamed(context, '/profile/$userId');
                   break;
                 case MenuItem.signOut:
-                  context.read<AppState>().signOut();
+                  context.read<AppState>().signOut().then((_) {
+                    Navigator.pushReplacementNamed(context, '/login');
+                  });
                   break;
                 default:
                   return;

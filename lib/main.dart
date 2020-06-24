@@ -9,7 +9,9 @@ import 'package:qiscus_chat_sample/room/presentation/page/room_create_list/room_
 import 'package:qiscus_chat_sample/room/presentation/page/room_detail/room_detail.dart';
 import 'package:qiscus_chat_sample/state/app_state.dart';
 import 'package:qiscus_chat_sample/state/room_state.dart';
+import 'package:qiscus_chat_sdk/extension.dart';
 
+import 'constants.dart';
 import 'page/chat_page.dart';
 import 'state/message_state.dart';
 import 'user/presentation/page/profile/profile_page.dart';
@@ -94,7 +96,7 @@ class _MyAppState extends State<MyApp> {
   void initState() {
     super.initState();
     Future.microtask(() async {
-      await appState.qiscus.setup$('sdksample');
+      await appState.qiscus.setup$(APP_ID);
       await appState.qiscus.setUser$(userId: 'guest-1003', userKey: 'passkey');
     });
   }
@@ -111,7 +113,6 @@ class _MyAppState extends State<MyApp> {
         builder: (_, state, __) => MaterialApp(
           title: 'Flutter Demo',
           theme: ThemeData(primarySwatch: Colors.blue),
-//          darkTheme: ThemeData.dark(),
           onGenerateRoute: router.generator,
           initialRoute: '/login',
           debugShowCheckedModeBanner: false,

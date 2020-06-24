@@ -27,7 +27,7 @@ class _ChatState extends State<ChatPage> {
   final typing$ = StreamController();
 
   bool isLoading = false;
-  MessageState _messageState;
+  MessageState _state;
   RoomState _roomState;
 
   @override
@@ -125,13 +125,14 @@ class _ChatState extends State<ChatPage> {
     scrollController.dispose();
     await scroll$.close();
     await typing$.close();
+    _state.clear();
   }
 
   @override
   void initState() {
     super.initState();
     scheduleMicrotask(() {
-      _messageState = Provider.of<MessageState>(context, listen: false);
+      _state = Provider.of<MessageState>(context, listen: false);
       _roomState = Provider.of<RoomState>(context, listen: false);
     });
 
@@ -229,7 +230,7 @@ class _ChatState extends State<ChatPage> {
     setState(() {
       isLoading = true;
     });
-    await _messageState.getPreviousMessage(widget.roomId);
+    await _state.getPreviousMessage(widget.roomId);
     setState(() {
       isLoading = false;
     });

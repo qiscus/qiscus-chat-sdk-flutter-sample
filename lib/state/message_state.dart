@@ -73,7 +73,7 @@ class MessageState extends ChangeNotifier {
     qiscus.getPreviousMessagesById(
       roomId: roomId,
       limit: 10,
-      callback: (List<QMessage> messages, Exception error) {
+      callback: (messages, error) {
         if (error != null) return completer.completeError(error);
 
         _messages.addEntries(messages.map((m) => MapEntry(m.uniqueId, m)));
@@ -175,6 +175,10 @@ class MessageState extends ChangeNotifier {
   @override
   dispose() {
     super.dispose();
+  }
+
+  void clear() {
+    _messages.clear();
   }
 }
 

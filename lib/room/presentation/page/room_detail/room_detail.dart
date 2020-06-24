@@ -167,7 +167,7 @@ class _RoomDetailState extends State<RoomDetail> {
                       );
                     },
                   )
-                : Container(),
+                : null,
           ),
         );
       },

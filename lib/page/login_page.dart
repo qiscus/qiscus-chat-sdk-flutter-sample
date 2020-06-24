@@ -1,7 +1,9 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:qiscus_chat_sample/constants.dart';
 import 'package:qiscus_chat_sample/state/app_state.dart';
+import 'package:qiscus_chat_sdk/qiscus_chat_sdk.dart';
 
 class LoginPage extends StatefulWidget {
   @override
@@ -10,7 +12,11 @@ class LoginPage extends StatefulWidget {
 
 class _LoginState extends State<LoginPage> {
   var _loginFormKey = GlobalKey<FormState>();
-  var _appIdController = TextEditingController(text: 'sdksample');
+
+  var _scaffoldKey = GlobalKey<ScaffoldState>();
+
+  // var _appIdController = TextEditingController(text: 'sdksample');
+  var _appIdController = TextEditingController(text: APP_ID);
   var _userIdController = TextEditingController(text: 'guest-1003');
   var _userKeyController = TextEditingController(text: 'passkey');
 
@@ -24,6 +30,7 @@ class _LoginState extends State<LoginPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      key: _scaffoldKey,
       body: SafeArea(
         child: DecoratedBox(
           decoration: BoxDecoration(
@@ -34,14 +41,14 @@ class _LoginState extends State<LoginPage> {
           ),
           child: Form(
             key: _loginFormKey,
-            child: buildContainer(),
+            child: buildContainer(context),
           ),
         ),
       ),
     );
   }
 
-  Widget buildContainer() {
+  Widget buildContainer(BuildContext context) {
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 50),
       child: Flex(
@@ -70,7 +77,7 @@ class _LoginState extends State<LoginPage> {
           Padding(
             padding: const EdgeInsets.only(top: 40.0),
             child: RaisedButton(
-              onPressed: _doLogin,
+              onPressed: () => _doLogin(context),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: <Widget>[
@@ -87,7 +94,7 @@ class _LoginState extends State<LoginPage> {
     );
   }
 
-  _doLogin() async {
+  _doLogin(BuildContext context) async {
     var appState = Provider.of<AppState>(context, listen: false);
     if (_loginFormKey.currentState.validate()) {
       var appId = _appIdController.text;
@@ -98,15 +105,22 @@ class _LoginState extends State<LoginPage> {
         isLoggingIn = true;
       });
 
-      await appState.setup(appId);
-      await appState.setUser(userId, userKey).catchError((error) {
-        print('got error while trying to login: $error');
-      });
+      try {
+        await appState.setup(appId);
+        await appState.setUser(userId, userKey);
 
-      setState(() {
-        isLoggingIn = false;
-      });
-      Navigator.pushReplacementNamed(context, '/room');
+        Navigator.pushReplacementNamed(context, '/room');
+      } on QError catch (error) {
+        var snackbar = SnackBar(
+          content: Text(error.message),
+          duration: const Duration(seconds: 2),
+        );
+        _scaffoldKey.currentState.showSnackBar(snackbar);
+      } finally {
+        setState(() {
+          isLoggingIn = false;
+        });
+      }
     }
   }
 }
