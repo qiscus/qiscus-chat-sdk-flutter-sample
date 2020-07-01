@@ -9,6 +9,8 @@ import 'package:qiscus_chat_sample/widget/app_bar.dart';
 import 'package:qiscus_chat_sample/widget/chat_bubble.dart';
 import 'package:rxdart/rxdart.dart';
 
+import 'create_group_page.dart';
+
 class ChatPage extends StatefulWidget {
   final int roomId;
 

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:qiscus_chat_sample/page/create_group_page.dart';
 import 'package:qiscus_chat_sample/state/state.dart';
 import 'package:qiscus_chat_sample/widget/user_list.dart';
 import 'package:qiscus_chat_sdk/qiscus_chat_sdk.dart';
@@ -52,6 +53,18 @@ class _State extends State {
             });
           },
         ),
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => CreateGroupPage(
+                  qiscus: qiscus,
+                ),
+              ));
+        },
+        child: Icon(Icons.add),
       ),
     );
   }
