@@ -163,8 +163,6 @@ class RoomState extends ChangeNotifier {
     _subscribed = qiscus.onMessageReceived((message) {
       // update unread count and update room timestamp
 
-      print('on message received ${message.chatRoomId} ${message.text}');
-
       var roomId = message.chatRoomId;
       this._rooms.update(roomId, (value) {
         print('old room found ${value.data.id}');

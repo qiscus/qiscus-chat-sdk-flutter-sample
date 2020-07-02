@@ -11,7 +11,7 @@ class AppState extends ChangeNotifier {
   }
 
   AppState() {
-//    qiscus.enableDebugMode(enable: true, level: QLogLevel.verbose);
+    qiscus.enableDebugMode(enable: true, level: QLogLevel.verbose);
     fbMessaging.configure(
       onMessage: (Map<String, dynamic> json) async {
 //        var value = JsonEncoder().convert(json);

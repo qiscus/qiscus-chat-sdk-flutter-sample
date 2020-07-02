@@ -34,6 +34,13 @@ class ChatBubble extends StatelessWidget {
           if (message.type == QMessageType.attachment)
             _buildAttachment(message.payload['url']),
           Container(
+            alignment: Alignment.centerRight,
+            child: Padding(
+              padding: const EdgeInsets.only(right: 20.0),
+              child: Text(message.status.toString()),
+            ),
+          ),
+          Container(
             alignment: Alignment.bottomRight,
             child: _buildStatus(message.status),
           ),
