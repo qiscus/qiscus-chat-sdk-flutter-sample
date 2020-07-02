@@ -59,6 +59,12 @@ class MessageState extends ChangeNotifier {
           (m) => message,
           ifAbsent: () => message,
         );
+
+        var room = roomState.rooms.singleWhere(
+          (element) => element.data.id == roomId,
+        );
+        room.data.lastMessage = message;
+        roomState.addOrUpdateRoom(room.data);
         notifyListeners();
 
         completer.complete(message);
