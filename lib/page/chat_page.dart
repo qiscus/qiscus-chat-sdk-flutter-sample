@@ -226,6 +226,7 @@ class _ChatState extends State<ChatPage> {
     var roomState = Provider.of<RoomState>(context, listen: false);
     var room = await roomState.getRoomWithId(roomId);
     await roomState.markAsRead(room.id, room.lastMessage.id);
+
     roomState.subscribe(room);
   }
 

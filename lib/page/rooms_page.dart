@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:date_format/date_format.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:provider/provider.dart';
@@ -73,9 +74,10 @@ class _RoomListState extends State<RoomListPage> {
           Expanded(
             child: Consumer<RoomState>(
               builder: (_, state, __) {
-                var _rooms = state.rooms //
-                    .toList()
-                      ..sort((r1, r2) => r2.time.compareTo(r1.time));
+                var _rooms = state.rooms.toList()
+                  ..sort((r1, r2) => r2.data.lastMessage?.timestamp
+                      ?.compareTo(r1.data.lastMessage.timestamp));
+
                 var rooms = _rooms.map((it) => it.data).toList();
                 return ListView.separated(
                   itemBuilder: (_, index) {
@@ -96,26 +98,34 @@ class _RoomListState extends State<RoomListPage> {
                         room.lastMessage?.text ?? 'No last message',
                         overflow: TextOverflow.ellipsis,
                       ),
-                      trailing: (room.unreadCount > 0)
-                          ? Container(
-                              alignment: Alignment.center,
-                              width: 30,
-                              height: 30,
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(50),
-                                color: Colors.lightGreen,
-                              ),
-                              child: Text(
-                                room.unreadCount.toString(),
-                                style: TextStyle(
-                                  color: Colors.white,
+                      trailing: Column(
+                        children: <Widget>[
+                          Text(formatDate(
+                            room.lastMessage?.timestamp,
+                            [HH, ':', mm],
+                          )),
+                          (room.unreadCount > 0)
+                              ? Container(
+                                  alignment: Alignment.center,
+                                  width: 30,
+                                  height: 30,
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(50),
+                                    color: Colors.lightGreen,
+                                  ),
+                                  child: Text(
+                                    room.unreadCount.toString(),
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                )
+                              : Container(
+                                  width: 30,
+                                  height: 30,
                                 ),
-                              ),
-                            )
-                          : Container(
-                              width: 30,
-                              height: 30,
-                            ),
+                        ],
+                      ),
                     );
                   },
                   separatorBuilder: (_, __) => Divider(
