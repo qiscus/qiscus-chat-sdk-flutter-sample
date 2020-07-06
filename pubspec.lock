@@ -310,6 +310,13 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "0.2.0"
+  grouped_list:
+    dependency: "direct main"
+    description:
+      name: grouped_list
+      url: "https://pub.dartlang.org"
+    source: hosted
+    version: "3.2.3"
   html:
     dependency: transitive
     description:
@@ -498,7 +505,7 @@ packages:
       path: "../qiscus-chat-sdk-flutter"
       relative: true
     source: path
-    version: "1.0.0+beta1"
+    version: "1.0.0+beta3"
   quiver:
     dependency: transitive
     description:
