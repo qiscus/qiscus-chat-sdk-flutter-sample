@@ -30,6 +30,10 @@ class _ChatPageState extends State<ChatPage> {
   QiscusSDK qiscus;
   QAccount account;
   QChatRoom room;
+
+  bool isUserTyping = false;
+  String userTyping;
+
   var messages = HashMap<String, QMessage>();
 
   StreamSubscription<QMessage> _onMessageReceivedSubscription;
@@ -40,6 +44,8 @@ class _ChatPageState extends State<ChatPage> {
   final scrollController = ScrollController();
 
   StreamSubscription<QMessage> _onMessageDeletedSubscription;
+
+  StreamSubscription<QUserTyping> _onUserTypingSubscription;
 
   @override
   void initState() {
@@ -76,6 +82,8 @@ class _ChatPageState extends State<ChatPage> {
       _onMessageDeletedSubscription = qiscus
           .onMessageDeleted$()
           .listen((it) => _onMessageDeleted(it.uniqueId));
+
+      _onUserTyping();
     });
   }
 
@@ -87,6 +95,7 @@ class _ChatPageState extends State<ChatPage> {
     _onMessageDeliveredSubscription?.cancel();
     _onMessageReadSubscription?.cancel();
     _onMessageDeletedSubscription?.cancel();
+    _onUserTypingSubscription?.cancel();
   }
 
   @override
@@ -105,17 +114,36 @@ class _ChatPageState extends State<ChatPage> {
         ),
         title: Row(
           children: <Widget>[
-            Hero(
-              tag: HeroTags.roomAvatar(roomId: room.id),
-              child: Avatar(url: room.avatarUrl),
+            Expanded(
+              flex: 0,
+              child: Hero(
+                tag: HeroTags.roomAvatar(roomId: room.id),
+                child: Avatar(url: room.avatarUrl),
+              ),
             ),
-            Padding(
-              padding: const EdgeInsets.only(left: 10.0),
-              child: Text(room.name),
+            Expanded(
+              flex: 1,
+              child: Padding(
+                padding: const EdgeInsets.only(left: 10.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Text(room.name),
+                    if (isUserTyping)
+                      Text(
+                        '$userTyping is typing...',
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontStyle: FontStyle.italic,
+                          fontWeight: FontWeight.normal,
+                        ),
+                      ),
+                  ],
+                ),
+              ),
             ),
           ],
         ),
-        centerTitle: false,
       ),
       body: Column(
         children: <Widget>[
@@ -270,6 +298,27 @@ class _ChatPageState extends State<ChatPage> {
   void _onMessageDeleted(String uniqueId) {
     setState(() {
       this.messages.removeWhere((key, value) => key == uniqueId);
+    });
+  }
+
+  void _onUserTyping() {
+    Timer timer;
+
+    _onUserTypingSubscription = qiscus.onUserTyping$().listen((typing) {
+      print('on user typing: $typing');
+      if (timer != null && timer.isActive) timer.cancel();
+
+      setState(() {
+        isUserTyping = true;
+        userTyping = typing.userId;
+      });
+
+      timer = Timer(const Duration(seconds: 2), () {
+        setState(() {
+          isUserTyping = false;
+          userTyping = null;
+        });
+      });
     });
   }
 }
