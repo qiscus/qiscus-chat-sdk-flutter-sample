@@ -5,7 +5,10 @@ import 'package:date_format/date_format.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:qiscus_chat_sample/constants.dart';
+import 'package:qiscus_chat_sample/user_list_page.dart';
 import 'package:qiscus_chat_sdk/qiscus_chat_sdk.dart';
+import 'avatar_widget.dart';
+import 'extensions.dart';
 
 import 'chat_page.dart';
 import 'login_page.dart';
@@ -16,16 +19,6 @@ class RoomListPage extends StatefulWidget {
     @required this.qiscus,
     @required this.account,
   });
-
-  static MaterialPageRoute route({
-    @required QiscusSDK qiscus,
-    @required QAccount account,
-  }) {
-    return MaterialPageRoute(
-      builder: (c) => RoomListPage(qiscus: qiscus, account: account),
-    );
-  }
-
   final QiscusSDK qiscus;
   final QAccount account;
 
@@ -42,6 +35,8 @@ class _RoomListPageState extends State<RoomListPage> {
   QAccount account;
   QiscusSDK qiscus;
   var rooms = HashMap<int, QChatRoom>();
+  StreamSubscription<QMessage> _onMessageReceivedSubscription;
+  StreamSubscription<int> _onChatRoomCleared;
 
   @override
   void initState() {
@@ -53,7 +48,23 @@ class _RoomListPageState extends State<RoomListPage> {
       setState(() {
         this.rooms.addEntries(rooms.map((r) => MapEntry(r.id, r)));
       });
+
+      _onChatRoomCleared = qiscus.onChatRoomCleared$().listen((roomId) {
+        setState(() {
+          this.rooms.removeWhere((key, room) => key == roomId);
+        });
+      });
+
+      _onMessageReceivedSubscription =
+          qiscus.onMessageReceived$().listen(_onMessageReceived);
     });
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
+    _onMessageReceivedSubscription?.cancel();
+    _onChatRoomCleared?.cancel();
   }
 
   @override
@@ -64,13 +75,7 @@ class _RoomListPageState extends State<RoomListPage> {
           padding: const EdgeInsets.all(10.0),
           child: Hero(
             tag: HeroTags.accountAvatar,
-            child: CircleAvatar(
-              backgroundImage: Image.network(
-                account.avatarUrl,
-                fit: BoxFit.cover,
-              ).image,
-              onBackgroundImageError: (_, __) {},
-            ),
+            child: Avatar(url: account.avatarUrl),
           ),
         ),
         title: Text(account.name),
@@ -93,19 +98,16 @@ class _RoomListPageState extends State<RoomListPage> {
                 case MenuItems.logout:
                   {
                     await qiscus.clearUser$();
-                    Navigator.pushReplacement(
-                      context,
-                      LoginPage.route(
-                        qiscus: qiscus,
-                      ),
-                    );
+                    context.pushReplacement(LoginPage(
+                      qiscus: qiscus,
+                    ));
+
                     break;
                   }
 
                 case MenuItems.profile:
-                  var _account = await Navigator.push(
-                    context,
-                    ProfilePage.route(
+                  var _account = await context.push(
+                    ProfilePage(
                       qiscus: qiscus,
                       account: account,
                     ),
@@ -130,14 +132,78 @@ class _RoomListPageState extends State<RoomListPage> {
             var room = rooms.elementAt(index);
             var lastMessage = _getLastMessage(room.lastMessage);
             return ListTile(
-              leading: Hero(
-                tag: HeroTags.roomAvatar(roomId: room.id),
-                child: CircleAvatar(
-                  backgroundImage: Image.network(room.avatarUrl).image,
-                ),
+              leading: Stack(
+                overflow: Overflow.visible,
+                children: <Widget>[
+                  Hero(
+                    tag: HeroTags.roomAvatar(roomId: room.id),
+                    child: Avatar(url: room.avatarUrl),
+                  ),
+                  if (room.unreadCount > 0)
+                    Positioned(
+                      bottom: -3,
+                      right: -3,
+                      child: Container(
+                        width: 18,
+                        height: 18,
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.all(Radius.circular(50)),
+                          color: Colors.redAccent,
+                          border: Border.fromBorderSide(BorderSide(
+                            color: Colors.white,
+                            width: 1,
+                          )),
+                        ),
+                        child: Center(
+                          child: Text(
+                            room.unreadCount > 9
+                                ? '9+'
+                                : room.unreadCount.toString(),
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 11,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
               ),
               title: Text(room.name),
-              subtitle: Text(lastMessage),
+              subtitle: room.type == QRoomType.single
+                  ? Text(
+                      lastMessage,
+                      style: TextStyle(
+                        fontStyle: FontStyle.italic,
+                        fontSize: 12,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    )
+                  : Row(
+                      children: <Widget>[
+                        Expanded(
+                          flex: 0,
+                          child: Text(
+                            '${room.lastMessage.sender.name}: ',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ),
+                        Expanded(
+                          flex: 2,
+                          child: Text(
+                            lastMessage,
+                            style: TextStyle(
+                              fontStyle: FontStyle.italic,
+                              fontSize: 12,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
               trailing: room.lastMessage != null
                   ? Text(
                       formatDate(
@@ -147,9 +213,8 @@ class _RoomListPageState extends State<RoomListPage> {
                     )
                   : Container(),
               onTap: () async {
-                var _room = await Navigator.push(
-                  context,
-                  ChatPage.route(
+                var _room = await context.push(
+                  ChatPage(
                     qiscus: qiscus,
                     account: account,
                     room: room,
@@ -173,6 +238,15 @@ class _RoomListPageState extends State<RoomListPage> {
           },
         ),
       ),
+      floatingActionButton: FloatingActionButton(
+        child: Icon(Icons.search),
+        onPressed: () {
+          context.push(UserListPage(
+            qiscus: qiscus,
+            account: account,
+          ));
+        },
+      ),
     );
   }
 
@@ -180,5 +254,26 @@ class _RoomListPageState extends State<RoomListPage> {
     if (lastMessage == null) return 'No messages';
     if (lastMessage.text.contains('[file]')) return 'File attachment';
     return lastMessage.text;
+  }
+
+  void _onMessageReceived(QMessage message) async {
+    var roomId = message.chatRoomId;
+    var hasRoom = this.rooms.containsKey(roomId);
+
+    QChatRoom room;
+    if (!hasRoom) {
+      var rooms = await qiscus.getChatRooms$(roomIds: [roomId]);
+      room = rooms.first;
+    }
+
+    setState(() {
+      this.rooms.update(roomId, (room) {
+        room.lastMessage = message;
+        room.unreadCount++;
+        return room;
+      }, ifAbsent: () {
+        return room;
+      });
+    });
   }
 }

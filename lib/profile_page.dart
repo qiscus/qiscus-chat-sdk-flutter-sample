@@ -8,18 +8,6 @@ class ProfilePage extends StatefulWidget {
     @required this.account,
   });
 
-  static MaterialPageRoute route({
-    @required QiscusSDK qiscus,
-    @required QAccount account,
-  }) {
-    return MaterialPageRoute(
-      builder: (context) => ProfilePage(
-        qiscus: qiscus,
-        account: account,
-      ),
-    );
-  }
-
   final QiscusSDK qiscus;
   final QAccount account;
 

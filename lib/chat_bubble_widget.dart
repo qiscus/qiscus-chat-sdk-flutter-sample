@@ -1,5 +1,6 @@
 import 'package:date_format/date_format.dart';
 import 'package:flutter/material.dart';
+import 'package:qiscus_chat_sample/avatar_widget.dart';
 import 'package:qiscus_chat_sdk/qiscus_chat_sdk.dart';
 
 class ChatBubble extends StatelessWidget {
@@ -23,9 +24,7 @@ class ChatBubble extends StatelessWidget {
         // textDirection: TextDirection.rtl,
         textDirection: flipped ? TextDirection.rtl : TextDirection.ltr,
         children: <Widget>[
-          CircleAvatar(
-            backgroundImage: Image.network(sender.avatarUrl).image,
-          ),
+          Avatar(url: sender.avatarUrl),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 8.0),
             child: Column(
@@ -33,8 +32,14 @@ class ChatBubble extends StatelessWidget {
               crossAxisAlignment:
                   flipped ? CrossAxisAlignment.end : CrossAxisAlignment.start,
               children: <Widget>[
-                Text(sender.name),
+                Text(
+                  sender.name,
+                  style: TextStyle(
+                    fontSize: 12,
+                  ),
+                ),
                 Stack(
+                  overflow: Overflow.visible,
                   children: <Widget>[
                     Container(
                       width: 200,
@@ -58,7 +63,7 @@ class ChatBubble extends StatelessWidget {
                     ),
                     if (flipped)
                       Positioned(
-                        left: 5,
+                        left: -32,
                         bottom: 1,
                         child: Text(
                             formatDate(
@@ -71,7 +76,7 @@ class ChatBubble extends StatelessWidget {
                       ),
                     if (!flipped)
                       Positioned(
-                        right: 5,
+                        right: -32,
                         bottom: 1,
                         child: Text(
                             formatDate(
@@ -81,6 +86,19 @@ class ChatBubble extends StatelessWidget {
                             style: TextStyle(
                               fontSize: 12,
                             )),
+                      ),
+                    if (flipped)
+                      Positioned(
+                        top: 0,
+                        left: flipped ? -14 : null,
+                        right: !flipped ? -14 : null,
+                        child: Icon(
+                          Icons.done_all,
+                          size: 12,
+                          color: message.status == QMessageStatus.read
+                              ? Colors.lightGreen
+                              : Colors.grey,
+                        ),
                       ),
                   ],
                 ),

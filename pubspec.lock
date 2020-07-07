@@ -505,7 +505,7 @@ packages:
       path: "../qiscus-chat-sdk-flutter"
       relative: true
     source: path
-    version: "1.0.0+beta3"
+    version: "1.0.0+beta4"
   quiver:
     dependency: transitive
     description:

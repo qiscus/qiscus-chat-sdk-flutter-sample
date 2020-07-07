@@ -5,6 +5,7 @@ import 'package:date_format/date_format.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:grouped_list/grouped_list.dart';
+import 'package:qiscus_chat_sample/avatar_widget.dart';
 import 'package:qiscus_chat_sample/constants.dart';
 import 'package:qiscus_chat_sdk/qiscus_chat_sdk.dart';
 
@@ -21,20 +22,6 @@ class ChatPage extends StatefulWidget {
     @required this.room,
   });
 
-  static MaterialPageRoute route({
-    @required QiscusSDK qiscus,
-    @required QAccount account,
-    @required QChatRoom room,
-  }) {
-    return MaterialPageRoute(
-      builder: (c) => ChatPage(
-        qiscus: qiscus,
-        account: account,
-        room: room,
-      ),
-    );
-  }
-
   @override
   _ChatPageState createState() => _ChatPageState();
 }
@@ -45,8 +32,14 @@ class _ChatPageState extends State<ChatPage> {
   QChatRoom room;
   var messages = HashMap<String, QMessage>();
 
+  StreamSubscription<QMessage> _onMessageReceivedSubscription;
+  StreamSubscription<QMessage> _onMessageReadSubscription;
+  StreamSubscription<QMessage> _onMessageDeliveredSubscription;
+
   final messageInputController = TextEditingController();
   final scrollController = ScrollController();
+
+  StreamSubscription<QMessage> _onMessageDeletedSubscription;
 
   @override
   void initState() {
@@ -58,13 +51,42 @@ class _ChatPageState extends State<ChatPage> {
     scheduleMicrotask(() async {
       var data = await qiscus.getChatRoomWithMessages$(roomId: room.id);
       setState(() {
-        messages.addEntries(data.messages.map((msg) => MapEntry(
-              msg.uniqueId,
-              msg,
-            )));
+        var entries = data.messages.map((m) {
+          return MapEntry(
+            m.uniqueId,
+            m,
+          );
+        });
+        messages.addEntries(entries);
         room = data.room;
+        if (data.messages.length > 0) {
+          room.lastMessage = data.messages.last;
+        }
       });
+
+      qiscus.enableDebugMode(enable: true);
+      qiscus.subscribeChatRoom(room);
+      _onMessageReceivedSubscription =
+          qiscus.onMessageReceived$().listen(_onMessageReceived);
+      _onMessageDeliveredSubscription = qiscus
+          .onMessageDelivered$()
+          .listen((it) => _onMessageDelivered(it.uniqueId));
+      _onMessageReadSubscription =
+          qiscus.onMessageRead$().listen((it) => _onMessageRead(it.uniqueId));
+      _onMessageDeletedSubscription = qiscus
+          .onMessageDeleted$()
+          .listen((it) => _onMessageDeleted(it.uniqueId));
     });
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
+    qiscus.unsubscribeChatRoom(room);
+    _onMessageReceivedSubscription?.cancel();
+    _onMessageDeliveredSubscription?.cancel();
+    _onMessageReadSubscription?.cancel();
+    _onMessageDeletedSubscription?.cancel();
   }
 
   @override
@@ -85,9 +107,7 @@ class _ChatPageState extends State<ChatPage> {
           children: <Widget>[
             Hero(
               tag: HeroTags.roomAvatar(roomId: room.id),
-              child: CircleAvatar(
-                backgroundImage: Image.network(room.avatarUrl).image,
-              ),
+              child: Avatar(url: room.avatarUrl),
             ),
             Padding(
               padding: const EdgeInsets.only(left: 10.0),
@@ -134,40 +154,122 @@ class _ChatPageState extends State<ChatPage> {
             ),
           ),
           Container(
-            child: TextField(
-              controller: messageInputController,
-              onSubmitted: (_) async {
-                var newMessage = qiscus.generateMessage(
-                  chatRoomId: room.id,
-                  text: messageInputController.text,
-                );
-                messageInputController.clear();
-
-                setState(() {
-                  this.messages.addAll({
-                    newMessage.uniqueId: newMessage,
-                  });
-                });
-
-                var m = await qiscus.sendMessage$(message: newMessage);
-                print('message: $m');
-                setState(() {
-                  this.messages.update(newMessage.uniqueId, (_) {
-                    return m;
-                  });
-                  room.lastMessage = m;
-                });
-
-                scrollController.animateTo(
-                  ((this.messages.length + 1) * 200.0),
-                  duration: const Duration(milliseconds: 300),
-                  curve: Curves.linear,
-                );
-              },
+            child: Row(
+              children: <Widget>[
+                IconButton(
+                  onPressed: () {},
+                  icon: Icon(Icons.attach_file),
+                ),
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        border: Border.fromBorderSide(BorderSide(
+                          width: 1,
+                          color: Colors.black12,
+                        )),
+                      ),
+                      child: TextField(
+                        controller: messageInputController,
+                        keyboardType: TextInputType.text,
+                        textInputAction: TextInputAction.send,
+                        onSubmitted: (_) => _sendMessage(),
+                      ),
+                    ),
+                  ),
+                ),
+                IconButton(
+                  onPressed: () => _sendMessage(),
+                  icon: Icon(Icons.send),
+                ),
+              ],
             ),
           ),
         ],
       ),
     );
+  }
+
+  Future<void> _sendMessage() async {
+    if (messageInputController.text.trim().isEmpty) return;
+
+    final text = messageInputController.text;
+
+    var message = qiscus.generateMessage(chatRoomId: room.id, text: text);
+    setState(() {
+      this.messages.update(message.uniqueId, (m) {
+        return message;
+      }, ifAbsent: () => message);
+    });
+
+    var _message = await qiscus.sendMessage$(message: message);
+    setState(() {
+      this.messages.update(_message.uniqueId, (m) {
+        return _message;
+      }, ifAbsent: () => _message);
+      this.room.lastMessage = _message;
+    });
+
+    messageInputController.clear();
+
+    scrollController.animateTo(
+      ((this.messages.length + 1) * 200.0),
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.linear,
+    );
+  }
+
+  Future<void> _onMessageReceived(QMessage message) async {
+    setState(() {
+      this.messages.addAll({
+        message.uniqueId: message,
+      });
+    });
+    if (message.chatRoomId == room.id) {
+      await qiscus.markAsRead$(roomId: room.id, messageId: message.id);
+    }
+  }
+
+  void _onMessageDelivered(String uniqueId) {
+    var targetedMessage = this.messages[uniqueId];
+
+    if (targetedMessage != null) {
+      setState(() {
+        this.messages.updateAll((key, message) {
+          if (message.status == QMessageStatus.read) return message;
+          if (message.timestamp.isAfter(targetedMessage.timestamp)) {
+            return message;
+          }
+
+          message.status = QMessageStatus.delivered;
+          return message;
+        });
+      });
+    }
+  }
+
+  void _onMessageRead(String uniqueId) {
+    var targetedMessage = this.messages[uniqueId];
+    print('$uniqueId, $targetedMessage');
+
+    if (targetedMessage != null) {
+      setState(() {
+        this.messages.updateAll((key, message) {
+          if (message.timestamp.isAfter(targetedMessage.timestamp)) {
+            return message;
+          }
+
+          message.status = QMessageStatus.read;
+          return message;
+        });
+      });
+    }
+  }
+
+  void _onMessageDeleted(String uniqueId) {
+    setState(() {
+      this.messages.removeWhere((key, value) => key == uniqueId);
+    });
   }
 }

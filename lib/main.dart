@@ -1,10 +1,7 @@
-import 'dart:async';
-
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:qiscus_chat_sdk/qiscus_chat_sdk.dart';
 
-import 'constants.dart';
 import 'login_page.dart';
 
 void main() {
