@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:collection';
 
+import 'package:timeago/timeago.dart' as timeago;
 import 'package:date_format/date_format.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -10,6 +11,7 @@ import 'package:qiscus_chat_sample/constants.dart';
 import 'package:qiscus_chat_sdk/qiscus_chat_sdk.dart';
 
 import 'chat_bubble_widget.dart';
+import 'extensions.dart';
 
 class ChatPage extends StatefulWidget {
   final QiscusSDK qiscus;
@@ -33,6 +35,8 @@ class _ChatPageState extends State<ChatPage> {
 
   bool isUserTyping = false;
   String userTyping;
+  DateTime lastOnline;
+  bool isOnline = false;
 
   var messages = HashMap<String, QMessage>();
 
@@ -46,6 +50,8 @@ class _ChatPageState extends State<ChatPage> {
   StreamSubscription<QMessage> _onMessageDeletedSubscription;
 
   StreamSubscription<QUserTyping> _onUserTypingSubscription;
+
+  StreamSubscription<QUserPresence> _onUserPresenceSubscription;
 
   @override
   void initState() {
@@ -84,6 +90,8 @@ class _ChatPageState extends State<ChatPage> {
           .listen((it) => _onMessageDeleted(it.uniqueId));
 
       _onUserTyping();
+      _onUserPresence();
+      await qiscus.markAsRead$(roomId: room.id, messageId: room.lastMessage.id);
     });
   }
 
@@ -96,6 +104,7 @@ class _ChatPageState extends State<ChatPage> {
     _onMessageReadSubscription?.cancel();
     _onMessageDeletedSubscription?.cancel();
     _onUserTypingSubscription?.cancel();
+    _onUserPresenceSubscription?.cancel();
   }
 
   @override
@@ -108,7 +117,8 @@ class _ChatPageState extends State<ChatPage> {
       appBar: AppBar(
         leading: IconButton(
           onPressed: () {
-            Navigator.pop<QChatRoom>(context, room);
+            room.lastMessage = messages.last;
+            context.pop<QChatRoom>(room);
           },
           icon: Icon(Icons.arrow_back),
         ),
@@ -129,6 +139,19 @@ class _ChatPageState extends State<ChatPage> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: <Widget>[
                     Text(room.name),
+                    if (room.type == QRoomType.single && !isUserTyping)
+                      Text(
+                        isOnline
+                            ? 'Online'
+                            : lastOnline != null
+                                ? timeago.format(lastOnline)
+                                : 'Offline',
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontStyle: FontStyle.italic,
+                          fontWeight: FontWeight.normal,
+                        ),
+                      ),
                     if (isUserTyping)
                       Text(
                         '$userTyping is typing...',
@@ -253,6 +276,7 @@ class _ChatPageState extends State<ChatPage> {
       this.messages.addAll({
         message.uniqueId: message,
       });
+      this.room.lastMessage = message;
     });
     if (message.chatRoomId == room.id) {
       await qiscus.markAsRead$(roomId: room.id, messageId: message.id);
@@ -318,6 +342,25 @@ class _ChatPageState extends State<ChatPage> {
           isUserTyping = false;
           userTyping = null;
         });
+      });
+    });
+  }
+
+  void _onUserPresence() {
+    if (room.type != QRoomType.single) return;
+
+    var partnerId =
+        room.participants.where((it) => it.id != account.id).first?.id;
+    if (partnerId == null) return;
+
+    qiscus.subscribeUserOnlinePresence(partnerId);
+    _onUserPresenceSubscription = qiscus
+        .onUserOnlinePresence$()
+        .where((it) => it.userId == partnerId)
+        .listen((data) {
+      setState(() {
+        this.isOnline = data.isOnline;
+        this.lastOnline = data.lastOnline;
       });
     });
   }

@@ -61,6 +61,17 @@ class ChatBubble extends StatelessWidget {
                         child: Text(message.text),
                       ),
                     ),
+                    Positioned(
+                      top: -10,
+                      right: !flipped ? 0 : null,
+                      left: flipped ? 0 : null,
+                      child: Text(
+                        message.timestamp.millisecondsSinceEpoch.toString(),
+                        style: TextStyle(
+                          fontSize: 8,
+                        ),
+                      ),
+                    ),
                     if (flipped)
                       Positioned(
                         left: -32,

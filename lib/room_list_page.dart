@@ -43,6 +43,7 @@ class _RoomListPageState extends State<RoomListPage> {
     super.initState();
     qiscus = widget.qiscus;
     account = widget.account;
+
     scheduleMicrotask(() async {
       var rooms = await qiscus.getAllChatRooms$();
       setState(() {
