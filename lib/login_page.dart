@@ -49,25 +49,6 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   @override
-  void initState() {
-    super.initState();
-
-    scheduleMicrotask(() async {
-      _doLogin();
-      await widget.qiscus.setup$(APP_ID);
-      var _account = await widget.qiscus.setUser$(
-        userId: userIdController.text,
-        userKey: userKeyController.text,
-        username: userNameController.text,
-      );
-      context.pushReplacement(RoomListPage(
-        qiscus: widget.qiscus,
-        account: _account,
-      ));
-    });
-  }
-
-  @override
   Widget build(BuildContext context) {
     return Scaffold(
       key: scaffoldKey,
@@ -75,12 +56,7 @@ class _LoginPageState extends State<LoginPage> {
         width: double.infinity,
         height: double.infinity,
         padding: EdgeInsets.only(top: 100),
-        decoration: BoxDecoration(
-          image: DecorationImage(
-            image: Image.asset('assets/wallpaper/wallhaven-4y6d3g.jpg').image,
-            fit: BoxFit.cover,
-          ),
-        ),
+        color: Colors.black87,
         child: Column(
           children: <Widget>[
             Text(
@@ -169,24 +145,5 @@ class _LoginPageState extends State<LoginPage> {
         ),
       ),
     );
-  }
-
-  void _doLogin() async {
-    final qiscus = widget.qiscus;
-    var userId = userIdController.text;
-    var userKey = userKeyController.text;
-    var userName = userNameController.text;
-
-    await qiscus.setup$(APP_ID);
-    var account = await qiscus.setUser$(
-      userId: userId,
-      userKey: userKey,
-      username: userName,
-    );
-    // await qiscus.publishOnlinePresence$(isOnline: true);
-    context.pushReplacement(RoomListPage(
-      qiscus: qiscus,
-      account: account,
-    ));
   }
 }
