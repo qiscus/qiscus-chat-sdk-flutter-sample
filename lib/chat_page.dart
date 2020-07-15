@@ -11,7 +11,12 @@ import 'package:qiscus_chat_sample/constants.dart';
 import 'package:qiscus_chat_sdk/qiscus_chat_sdk.dart';
 
 import 'chat_bubble_widget.dart';
+import 'chat_room_detail_page.dart';
 import 'extensions.dart';
+
+enum _PopupMenu {
+  detail,
+}
 
 class ChatPage extends StatefulWidget {
   final QiscusSDK qiscus;
@@ -172,6 +177,31 @@ class _ChatPageState extends State<ChatPage> {
             ),
           ],
         ),
+        actions: <Widget>[
+          PopupMenuButton<_PopupMenu>(
+            itemBuilder: (context) {
+              return [
+                PopupMenuItem(
+                  child: Text('Detail'),
+                  value: _PopupMenu.detail,
+                ),
+              ];
+            },
+            onSelected: (menu) async {
+              switch (menu) {
+                case _PopupMenu.detail:
+                  var room = await context.push<QChatRoom>(ChatRoomDetailPage(
+                    qiscus: qiscus,
+                    account: account,
+                    room: this.room,
+                  ));
+                  break;
+                default:
+                  break;
+              }
+            },
+          ),
+        ],
       ),
       body: Column(
         children: <Widget>[

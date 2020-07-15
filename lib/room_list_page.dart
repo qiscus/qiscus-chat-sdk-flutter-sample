@@ -45,12 +45,14 @@ class _RoomListPageState extends State<RoomListPage> {
     account = widget.account;
 
     scheduleMicrotask(() async {
+      if (!this.mounted) return;
       var rooms = await qiscus.getAllChatRooms$();
       setState(() {
         this.rooms.addEntries(rooms.map((r) => MapEntry(r.id, r)));
       });
 
       _onChatRoomCleared = qiscus.onChatRoomCleared$().listen((roomId) {
+        if (!this.mounted) return;
         setState(() {
           this.rooms.removeWhere((key, room) => key == roomId);
         });
@@ -258,6 +260,7 @@ class _RoomListPageState extends State<RoomListPage> {
   }
 
   void _onMessageReceived(QMessage message) async {
+    if (!this.mounted) return;
     var roomId = message.chatRoomId;
     var hasRoom = this.rooms.containsKey(roomId);
 
