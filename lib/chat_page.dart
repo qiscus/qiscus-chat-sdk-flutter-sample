@@ -92,6 +92,9 @@ class _ChatPageState extends State<ChatPage> {
       _onUserTyping();
       _onUserPresence();
       await qiscus.markAsRead$(roomId: room.id, messageId: room.lastMessage.id);
+      setState(() {
+        room.unreadCount = 0;
+      });
     });
   }
 
@@ -117,7 +120,9 @@ class _ChatPageState extends State<ChatPage> {
       appBar: AppBar(
         leading: IconButton(
           onPressed: () {
-            room.lastMessage = messages.last;
+            setState(() {
+              room.lastMessage = messages.last;
+            });
             context.pop<QChatRoom>(room);
           },
           icon: Icon(Icons.arrow_back),
