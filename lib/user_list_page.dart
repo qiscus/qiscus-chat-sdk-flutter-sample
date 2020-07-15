@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:collection';
 
 import 'package:flutter/material.dart';
+import 'package:qiscus_chat_sample/create_room_page.dart';
 import 'package:qiscus_chat_sdk/qiscus_chat_sdk.dart';
 
 import 'avatar_widget.dart';
@@ -53,6 +54,15 @@ class _UserListPageState extends State<UserListPage> {
           icon: Icon(Icons.arrow_back),
         ),
         title: Text('Contacts'),
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          context.pushReplacement(CreateRoomPage(
+            qiscus: qiscus,
+            account: account,
+          ));
+        },
+        child: Icon(Icons.add),
       ),
       body: Container(
         child: ListView.separated(
