@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:collection';
 
+import 'package:file_picker/file_picker.dart';
 import 'package:timeago/timeago.dart' as timeago;
 import 'package:date_format/date_format.dart';
 import 'package:flutter/cupertino.dart';
@@ -243,7 +244,34 @@ class _ChatPageState extends State<ChatPage> {
             child: Row(
               children: <Widget>[
                 IconButton(
-                  onPressed: () {},
+                  onPressed: () async {
+                    var file = await FilePicker.getFile(type: FileType.image);
+                    if (file != null) {
+                      // do something with this file
+                      var url = await qiscus.upload$(file);
+                      var message = qiscus.generateFileAttachmentMessage(
+                        chatRoomId: room.id,
+                        caption: file.path.split('/').last,
+                        url: url,
+                        text: 'Image attachment',
+                        size: file.lengthSync(),
+                      );
+
+                      setState(() {
+                        this.messages.addAll({
+                          message.uniqueId: message,
+                        });
+                      });
+                      var _message = await qiscus.sendMessage$(
+                        message: message,
+                      );
+                      setState(() {
+                        this.messages.update(message.uniqueId, (value) {
+                          return _message;
+                        });
+                      });
+                    }
+                  },
                   icon: Icon(Icons.attach_file),
                 ),
                 Expanded(

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:qiscus_chat_sample/constants.dart';
 import 'package:qiscus_chat_sdk/qiscus_chat_sdk.dart';
@@ -31,6 +33,17 @@ class _ProfilePageState extends State<ProfilePage> {
     account = widget.account;
     accountIdController = TextEditingController(text: account.id);
     accountNameController = TextEditingController(text: account.name);
+
+    scheduleMicrotask(() async {
+      var account = await qiscus.getUserData$();
+      print('loaded account data: $account');
+      if (this.mounted) {
+        setState(() {
+          this.account = account;
+          accountNameController.text = account.name;
+        });
+      }
+    });
   }
 
   @override
@@ -100,6 +113,7 @@ class _ProfilePageState extends State<ProfilePage> {
                       var account = await qiscus.updateUser$(
                         name: accountNameController.text,
                       );
+                      print('sukses update: $account');
                       setState(() {
                         isEditing = false;
                         this.account = account;

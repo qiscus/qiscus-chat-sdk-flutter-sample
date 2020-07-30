@@ -16,6 +16,12 @@ class MainApp extends StatefulWidget {
 class _MainAppState extends State<MainApp> {
   final qiscus = QiscusSDK();
 
+//  @override
+//  void initState() {
+//    super.initState();
+//    qiscus.enableDebugMode(enable: true);
+//  }
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
