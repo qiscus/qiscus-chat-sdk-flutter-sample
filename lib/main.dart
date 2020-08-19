@@ -51,9 +51,5 @@ class _MainAppState extends State<MainApp> {
         debugShowCheckedModeBanner: false,
       ),
     );
-    return MaterialApp(
-      home: LoginPage(qiscus: qiscus),
-      debugShowCheckedModeBanner: false,
-    );
   }
 }
