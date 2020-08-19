@@ -1,6 +1,8 @@
 import 'dart:async';
 
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:qiscus_chat_sdk/qiscus_chat_sdk.dart';
 
 import 'extensions.dart';
@@ -50,6 +52,9 @@ class _LoginPageState extends State<LoginPage> {
 
   @override
   Widget build(BuildContext context) {
+    final firebase = context.watch<FirebaseMessaging>();
+    final qiscus = context.watch<QiscusSDK>();
+
     return Scaffold(
       key: scaffoldKey,
       body: Container(
@@ -117,6 +122,10 @@ class _LoginPageState extends State<LoginPage> {
                               userKey: userKeyController.text,
                               username: userNameController.text,
                             );
+
+                            final token = await firebase.getToken();
+                            await qiscus.registerDeviceToken$(token: token);
+
                             scaffoldKey.currentState.hideCurrentSnackBar();
 
                             context.pushReplacement(RoomListPage(
