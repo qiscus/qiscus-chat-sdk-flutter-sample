@@ -1,12 +1,13 @@
 import 'dart:async';
 
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
-import 'package:qiscus_chat_sample/add_participant_page.dart';
-import 'package:qiscus_chat_sample/avatar_widget.dart';
 import 'package:qiscus_chat_sdk/qiscus_chat_sdk.dart';
 
-import 'constants.dart';
-import 'extensions.dart';
+import '../constants.dart';
+import '../extensions.dart';
+import '../widget/avatar_widget.dart';
+import 'add_participant_page.dart';
 
 class ChatRoomDetailPage extends StatefulWidget {
   ChatRoomDetailPage({
@@ -14,9 +15,11 @@ class ChatRoomDetailPage extends StatefulWidget {
     @required this.account,
     @required this.room,
   });
+
   final QiscusSDK qiscus;
   final QAccount account;
   final QChatRoom room;
+
   @override
   _ChatRoomDetailPageState createState() => _ChatRoomDetailPageState();
 }
@@ -98,7 +101,32 @@ class _ChatRoomDetailPageState extends State<ChatRoomDetailPage> {
                     bottom: 10,
                     right: 10,
                     child: IconButton(
-                      onPressed: () {},
+                      onPressed: () async {
+                        var file =
+                            await FilePicker.getFile(type: FileType.image);
+                        if (file != null) {
+                          var room = await Future.microtask(() async {
+                            var url = await qiscus.upload$(file);
+                            var completer = Completer<QChatRoom>();
+                            qiscus.updateChatRoom(
+                              roomId: this.room.id,
+                              avatarUrl: url,
+                              callback: (room, error) {
+                                if (error != null) {
+                                  return completer.completeError(error);
+                                }
+                                return completer.complete(room);
+                              },
+                            );
+                            return completer.future;
+                          });
+                          if (this.mounted) {
+                            setState(() {
+                              this.room = room;
+                            });
+                          }
+                        }
+                      },
                       icon: Icon(Icons.image),
                       color: Colors.white,
                     ),

@@ -3,8 +3,8 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:qiscus_chat_sdk/qiscus_chat_sdk.dart';
 
-import 'avatar_widget.dart';
-import 'extensions.dart';
+import '../widget/avatar_widget.dart';
+import '../extensions.dart';
 
 class AddParticipantPage extends StatefulWidget {
   AddParticipantPage({

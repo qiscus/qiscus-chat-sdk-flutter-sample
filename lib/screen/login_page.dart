@@ -5,8 +5,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:qiscus_chat_sdk/qiscus_chat_sdk.dart';
 
-import 'extensions.dart';
-import 'constants.dart';
+import '../extensions.dart';
+import '../constants.dart';
 import 'room_list_page.dart';
 
 class LoginPage extends StatefulWidget {
@@ -126,7 +126,7 @@ class _LoginPageState extends State<LoginPage> {
                             final token = await firebase.getToken();
                             await qiscus.registerDeviceToken$(token: token);
 
-                            scaffoldKey.currentState.hideCurrentSnackBar();
+                            scaffoldKey.currentState?.hideCurrentSnackBar();
 
                             context.pushReplacement(RoomListPage(
                               qiscus: widget.qiscus,

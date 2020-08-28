@@ -6,7 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:qiscus_chat_sdk/qiscus_chat_sdk.dart';
 
-import 'login_page.dart';
+import 'screen/login_page.dart';
 
 void main() {
   runApp(MainApp());
@@ -24,7 +24,6 @@ class _MainAppState extends State<MainApp> {
   @override
   void initState() {
     super.initState();
-    qiscus.enableDebugMode(enable: true);
 
     scheduleMicrotask(() {
       firebase.configure(
@@ -48,6 +47,7 @@ class _MainAppState extends State<MainApp> {
       ],
       child: MaterialApp(
         home: LoginPage(qiscus: qiscus),
+        theme: ThemeData.dark(),
         debugShowCheckedModeBanner: false,
       ),
     );

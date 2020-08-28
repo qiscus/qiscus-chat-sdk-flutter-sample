@@ -3,16 +3,18 @@ import 'dart:io';
 
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
-import 'package:qiscus_chat_sample/avatar_widget.dart';
-import 'package:qiscus_chat_sample/chat_page.dart';
 import 'package:qiscus_chat_sdk/qiscus_chat_sdk.dart';
-import 'extensions.dart';
+
+import '../extensions.dart';
+import '../widget/avatar_widget.dart';
+import 'chat_page.dart';
 
 class CreateRoomPage extends StatefulWidget {
   CreateRoomPage({
     @required this.qiscus,
     @required this.account,
   });
+
   final QiscusSDK qiscus;
   final QAccount account;
 

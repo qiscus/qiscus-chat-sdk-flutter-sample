@@ -1,19 +1,19 @@
 import 'dart:async';
 import 'dart:collection';
 
-import 'package:file_picker/file_picker.dart';
-import 'package:timeago/timeago.dart' as timeago;
 import 'package:date_format/date_format.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:grouped_list/grouped_list.dart';
-import 'package:qiscus_chat_sample/avatar_widget.dart';
-import 'package:qiscus_chat_sample/constants.dart';
 import 'package:qiscus_chat_sdk/qiscus_chat_sdk.dart';
+import 'package:timeago/timeago.dart' as timeago;
 
-import 'chat_bubble_widget.dart';
+import '../constants.dart';
+import '../extensions.dart';
+import '../widget/avatar_widget.dart';
+import '../widget/chat_bubble_widget.dart';
 import 'chat_room_detail_page.dart';
-import 'extensions.dart';
 
 enum _PopupMenu {
   detail,
@@ -82,25 +82,37 @@ class _ChatPageState extends State<ChatPage> {
         }
       });
 
-      qiscus.enableDebugMode(enable: true);
       qiscus.subscribeChatRoom(room);
-      _onMessageReceivedSubscription =
-          qiscus.onMessageReceived$().listen(_onMessageReceived);
+      _onMessageReceivedSubscription = qiscus
+          .onMessageReceived$()
+          .takeWhile((_) => this.mounted)
+          .listen(_onMessageReceived);
       _onMessageDeliveredSubscription = qiscus
           .onMessageDelivered$()
+          .takeWhile((_) => this.mounted)
           .listen((it) => _onMessageDelivered(it.uniqueId));
-      _onMessageReadSubscription =
-          qiscus.onMessageRead$().listen((it) => _onMessageRead(it.uniqueId));
+      _onMessageReadSubscription = qiscus
+          .onMessageRead$()
+          .takeWhile((_) => this.mounted)
+          .listen((it) => _onMessageRead(it.uniqueId));
       _onMessageDeletedSubscription = qiscus
           .onMessageDeleted$()
+          .takeWhile((_) => this.mounted)
           .listen((it) => _onMessageDeleted(it.uniqueId));
 
       _onUserTyping();
       _onUserPresence();
-      await qiscus.markAsRead$(roomId: room.id, messageId: room.lastMessage.id);
-      setState(() {
-        room.unreadCount = 0;
-      });
+      qiscus.markAsRead(
+        roomId: room.id,
+        messageId: room.lastMessage.id,
+        callback: (err) {
+          if (this.mounted) {
+            setState(() {
+              this.room.unreadCount = 0;
+            });
+          }
+        },
+      );
     });
   }
 
@@ -244,34 +256,7 @@ class _ChatPageState extends State<ChatPage> {
             child: Row(
               children: <Widget>[
                 IconButton(
-                  onPressed: () async {
-                    var file = await FilePicker.getFile(type: FileType.image);
-                    if (file != null) {
-                      // do something with this file
-                      var url = await qiscus.upload$(file);
-                      var message = qiscus.generateFileAttachmentMessage(
-                        chatRoomId: room.id,
-                        caption: file.path.split('/').last,
-                        url: url,
-                        text: 'Image attachment',
-                        size: file.lengthSync(),
-                      );
-
-                      setState(() {
-                        this.messages.addAll({
-                          message.uniqueId: message,
-                        });
-                      });
-                      var _message = await qiscus.sendMessage$(
-                        message: message,
-                      );
-                      setState(() {
-                        this.messages.update(message.uniqueId, (value) {
-                          return _message;
-                        });
-                      });
-                    }
-                  },
+                  onPressed: _onUpload,
                   icon: Icon(Icons.attach_file),
                 ),
                 Expanded(
@@ -305,6 +290,35 @@ class _ChatPageState extends State<ChatPage> {
     );
   }
 
+  void _onUpload() async {
+    var file = await FilePicker.getFile(type: FileType.image);
+    if (file != null) {
+      // do something with this file
+      var url = await qiscus.upload$(file);
+      var message = qiscus.generateFileAttachmentMessage(
+        chatRoomId: room.id,
+        caption: file.path.split('/').last,
+        url: url,
+        text: 'Image attachment',
+        size: file.lengthSync(),
+      );
+
+      setState(() {
+        this.messages.addAll({
+          message.uniqueId: message,
+        });
+      });
+      var _message = await qiscus.sendMessage$(
+        message: message,
+      );
+      setState(() {
+        this.messages.update(message.uniqueId, (value) {
+          return _message;
+        });
+      });
+    }
+  }
+
   Future<void> _sendMessage() async {
     if (messageInputController.text.trim().isEmpty) return;
 
@@ -335,11 +349,15 @@ class _ChatPageState extends State<ChatPage> {
   }
 
   Future<void> _onMessageReceived(QMessage message) async {
+    final lastMessage = room.lastMessage;
     setState(() {
       this.messages.addAll({
         message.uniqueId: message,
       });
-      this.room.lastMessage = message;
+
+      if (lastMessage.timestamp.isBefore(message.timestamp)) {
+        room.lastMessage = message;
+      }
     });
     if (message.chatRoomId == room.id) {
       await qiscus.markAsRead$(roomId: room.id, messageId: message.id);
@@ -366,7 +384,6 @@ class _ChatPageState extends State<ChatPage> {
 
   void _onMessageRead(String uniqueId) {
     var targetedMessage = this.messages[uniqueId];
-    print('$uniqueId, $targetedMessage');
 
     if (targetedMessage != null) {
       setState(() {
@@ -391,8 +408,8 @@ class _ChatPageState extends State<ChatPage> {
   void _onUserTyping() {
     Timer timer;
 
-    _onUserTypingSubscription = qiscus.onUserTyping$().listen((typing) {
-      print('on user typing: $typing');
+    _onUserTypingSubscription =
+        qiscus.onUserTyping$().takeWhile((_) => this.mounted).listen((typing) {
       if (timer != null && timer.isActive) timer.cancel();
 
       setState(() {

@@ -1,7 +1,8 @@
 import 'dart:async';
 
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
-import 'package:qiscus_chat_sample/constants.dart';
+import '../constants.dart';
 import 'package:qiscus_chat_sdk/qiscus_chat_sdk.dart';
 
 class ProfilePage extends StatefulWidget {
@@ -35,20 +36,15 @@ class _ProfilePageState extends State<ProfilePage> {
     accountNameController = TextEditingController(text: account.name);
 
     scheduleMicrotask(() async {
-      var account = await qiscus.getUserData$();
-      print('loaded account data: $account');
-      if (this.mounted) {
-        setState(() {
-          this.account = account;
-          accountNameController.text = account.name;
-        });
-      }
+      qiscus.getUserData(callback: (account, err) {
+        if (err != null && this.mounted) {
+          setState(() {
+            this.account = account;
+            accountNameController.text = account.name;
+          });
+        }
+      });
     });
-  }
-
-  @override
-  void dispose() {
-    super.dispose();
   }
 
   @override
@@ -81,7 +77,22 @@ class _ProfilePageState extends State<ProfilePage> {
                   bottom: 10,
                   right: 10,
                   child: IconButton(
-                    onPressed: () {},
+                    onPressed: () async {
+                      var file = await FilePicker.getFile(type: FileType.image);
+                      if (file != null) {
+                        var account = await Future.microtask(() async {
+                          var url = await qiscus.upload$(file);
+                          return await qiscus.updateUser$(
+                            avatarUrl: url,
+                          );
+                        });
+                        if (this.mounted) {
+                          setState(() {
+                            this.account = account;
+                          });
+                        }
+                      }
+                    },
                     icon: Icon(Icons.image),
                     color: Colors.white,
                   ),
