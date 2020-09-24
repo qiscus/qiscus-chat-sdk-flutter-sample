@@ -2,8 +2,9 @@ import 'dart:async';
 
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
-import '../constants.dart';
 import 'package:qiscus_chat_sdk/qiscus_chat_sdk.dart';
+
+import '../constants.dart';
 
 class ProfilePage extends StatefulWidget {
   ProfilePage({
@@ -26,6 +27,8 @@ class _ProfilePageState extends State<ProfilePage> {
   TextEditingController accountNameController;
 
   bool isEditing = false;
+
+  var scaffoldKey = GlobalKey<ScaffoldState>();
 
   @override
   void initState() {
@@ -50,6 +53,7 @@ class _ProfilePageState extends State<ProfilePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      key: scaffoldKey,
       appBar: AppBar(
         leading: IconButton(
           onPressed: () => Navigator.pop<QAccount>(context, account),
@@ -80,12 +84,17 @@ class _ProfilePageState extends State<ProfilePage> {
                     onPressed: () async {
                       var file = await FilePicker.getFile(type: FileType.image);
                       if (file != null) {
+                        var snackbar = SnackBar(content: Text('Updating user avatar...'));
+                        scaffoldKey.currentState.showSnackBar(snackbar);
+
                         var account = await Future.microtask(() async {
                           var url = await qiscus.upload$(file);
                           return await qiscus.updateUser$(
                             avatarUrl: url,
                           );
                         });
+                        scaffoldKey.currentState.hideCurrentSnackBar();
+
                         if (this.mounted) {
                           setState(() {
                             this.account = account;
@@ -120,15 +129,23 @@ class _ProfilePageState extends State<ProfilePage> {
                     decoration: InputDecoration(
                       labelText: 'Username',
                     ),
-                    onSubmitted: (_) async {
-                      var account = await qiscus.updateUser$(
-                        name: accountNameController.text,
+                    onSubmitted: (name) async {
+                      var snackbar = SnackBar(content: Text('Updating user...'));
+                      scaffoldKey.currentState.showSnackBar(snackbar);
+
+                      qiscus.updateUser(
+                        name: name,
+                        callback: (account, _err) {
+                          if (_err == null) {
+                            print('sukses update account: $account');
+                            setState(() {
+                              isEditing = false;
+                              this.account = account;
+                            });
+                          }
+                          scaffoldKey.currentState.hideCurrentSnackBar();
+                        },
                       );
-                      print('sukses update: $account');
-                      setState(() {
-                        isEditing = false;
-                        this.account = account;
-                      });
                     },
                     onEditingComplete: () {
                       setState(() {

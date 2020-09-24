@@ -39,6 +39,9 @@ class _RoomListPageState extends State<RoomListPage> {
   StreamSubscription<QMessage> _onMessageReceivedSubscription;
   StreamSubscription<int> _onChatRoomClearedSubscription;
 
+  void Function() _roomClearedSubs;
+  void Function() _messageReceivedSubs;
+
   @override
   void initState() {
     super.initState();
@@ -47,25 +50,29 @@ class _RoomListPageState extends State<RoomListPage> {
 
     scheduleMicrotask(() async {
       qiscus.getAllChatRooms(callback: (rooms, err) {
-        print('rooms: $rooms, $err');
         if (err != null) {
           throw err;
         }
         if (err == null) {
           var entries = rooms.map((r) => MapEntry(r.id, r));
-          this.rooms.addEntries(entries);
+          setState(() {
+            this.rooms.addEntries(entries);
+          });
         }
       });
 
-      _onChatRoomClearedSubscription = qiscus
-          .onChatRoomCleared$()
-          .takeWhile((_) => this.mounted)
-          .listen(_onRoomCleared);
+      _roomClearedSubs = qiscus.onChatRoomCleared(_onRoomCleared);
+      _messageReceivedSubs = qiscus.onMessageReceived(_onMessageReceived);
 
-      _onMessageReceivedSubscription = qiscus
-          .onMessageReceived$()
-          .takeWhile((_) => this.mounted)
-          .listen(_onMessageReceived);
+      // _onChatRoomClearedSubscription = qiscus
+      //     .onChatRoomCleared$()
+      //     .takeWhile((_) => this.mounted)
+      //     .listen(_onRoomCleared);
+
+      // _onMessageReceivedSubscription = qiscus
+      //     .onMessageReceived$()
+      //     .takeWhile((_) => this.mounted)
+      //     .listen(_onMessageReceived);
     });
   }
 
@@ -74,6 +81,8 @@ class _RoomListPageState extends State<RoomListPage> {
     super.dispose();
     _onMessageReceivedSubscription?.cancel();
     _onChatRoomClearedSubscription?.cancel();
+    _roomClearedSubs?.call();
+    _messageReceivedSubs?.call();
   }
 
   @override
@@ -274,6 +283,7 @@ class _RoomListPageState extends State<RoomListPage> {
   }
 
   void _onRoomCleared(int roomId) {
+    if (!this.mounted) return;
     setState(() {
       rooms.removeWhere((key, value) => key == roomId);
     });

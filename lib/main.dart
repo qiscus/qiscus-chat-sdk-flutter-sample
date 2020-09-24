@@ -24,6 +24,7 @@ class _MainAppState extends State<MainApp> {
   @override
   void initState() {
     super.initState();
+    qiscus.enableDebugMode(enable: true, level: QLogLevel.verbose);
 
     scheduleMicrotask(() {
       firebase.configure(
@@ -47,7 +48,7 @@ class _MainAppState extends State<MainApp> {
       ],
       child: MaterialApp(
         home: LoginPage(qiscus: qiscus),
-        theme: ThemeData.dark(),
+        // theme: ThemeData.dark(),
         debugShowCheckedModeBanner: false,
       ),
     );

@@ -495,7 +495,7 @@ packages:
   qiscus_chat_sdk:
     dependency: "direct main"
     description:
-      path: "../qiscus-chat-sdk-flutter"
+      path: "../chat-core"
       relative: true
     source: path
     version: "1.0.4-dev.1"
