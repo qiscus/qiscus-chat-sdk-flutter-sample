@@ -19,7 +19,7 @@ dependencies:
   date_format: ^1.0.8
   cuid: ^0.1.2
   flutter_bloc:
-  qiscus_chat_sdk: ^1.0.0+beta1
+  qiscus_chat_sdk: ^1.0.4
   rxdart:
   grouped_list: ^3.2.3
   cupertino_icons: ^0.1.3
