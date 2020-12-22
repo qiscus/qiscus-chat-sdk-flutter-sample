@@ -25,9 +25,9 @@ dependencies:
   cupertino_icons: ^0.1.3
 
 # useful for local development
-dependency_overrides:
-  qiscus_chat_sdk:
-    path: ../chat-core
+# dependency_overrides:
+#  qiscus_chat_sdk:
+#    path: ../chat-core
 
 dev_dependencies:
   flutter_test:
