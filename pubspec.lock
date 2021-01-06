@@ -495,10 +495,10 @@ packages:
   qiscus_chat_sdk:
     dependency: "direct main"
     description:
-      path: "../qiscus-chat-sdk-flutter"
-      relative: true
-    source: path
-    version: "1.0.7"
+      name: qiscus_chat_sdk
+      url: "https://pub.dartlang.org"
+    source: hosted
+    version: "1.0.8-beta.2"
   quiver:
     dependency: transitive
     description:
