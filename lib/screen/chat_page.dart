@@ -17,6 +17,7 @@ import 'chat_room_detail_page.dart';
 
 enum _PopupMenu {
   detail,
+  clearMessages,
 }
 
 class ChatPage extends StatefulWidget {
@@ -198,16 +199,29 @@ class _ChatPageState extends State<ChatPage> {
                   child: Text('Detail'),
                   value: _PopupMenu.detail,
                 ),
+                PopupMenuItem(
+                  child: Text('Clear messages'),
+                  value: _PopupMenu.clearMessages,
+                ),
               ];
             },
             onSelected: (menu) async {
               switch (menu) {
                 case _PopupMenu.detail:
-                  var room = await context.push<QChatRoom>(ChatRoomDetailPage(
+                  await context.push<QChatRoom>(ChatRoomDetailPage(
                     qiscus: qiscus,
                     account: account,
                     room: this.room,
                   ));
+                  break;
+                case _PopupMenu.clearMessages:
+                  qiscus.clearMessagesByChatRoomId(
+                      roomUniqueIds: [this.room.uniqueId],
+                      callback: (error) {
+                        if (error != null) {
+                          print('got error while clearing room: $error');
+                        }
+                      });
                   break;
                 default:
                   break;
