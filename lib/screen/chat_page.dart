@@ -140,7 +140,11 @@ class _ChatPageState extends State<ChatPage> {
         leading: IconButton(
           onPressed: () {
             setState(() {
-              room.lastMessage = messages.last;
+              if (messages.isEmpty) {
+                room.lastMessage = null;
+              } else {
+                room.lastMessage = messages.last;
+              }
             });
             context.pop<QChatRoom>(room);
           },
@@ -220,6 +224,10 @@ class _ChatPageState extends State<ChatPage> {
                       callback: (error) {
                         if (error != null) {
                           print('got error while clearing room: $error');
+                        } else {
+                          setState(() {
+                            this.messages.clear();
+                          });
                         }
                       });
                   break;

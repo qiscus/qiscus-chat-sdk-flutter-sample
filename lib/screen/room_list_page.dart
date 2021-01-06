@@ -149,11 +149,12 @@ class _RoomListPageState extends State<RoomListPage> {
           },
           child: ListView.separated(
             itemBuilder: (context, index) {
-              var rooms = this.rooms.values.toList()
-                ..sort((r1, r2) {
-                  return r2.lastMessage.timestamp
-                      .compareTo(r1.lastMessage.timestamp);
-                });
+              var rooms =
+                  this.rooms.values.where((r) => r.lastMessage != null).toList()
+                    ..sort((r1, r2) {
+                      return r2.lastMessage.timestamp
+                          .compareTo(r1.lastMessage.timestamp);
+                    });
               var room = rooms.elementAt(index);
               var lastMessage = _getLastMessage(room.lastMessage);
               return ListTile(

@@ -29,7 +29,6 @@ class _MainAppState extends State<MainApp> {
 
     scheduleMicrotask(() {
       _subs = Stream.periodic(const Duration(seconds: 3), (_) => qiscus.isLogin)
-          // .distinct((_, isLogin) => !isLogin)
           .where((isLogin) => isLogin)
           .listen((isLogin) {
         if (isLogin) {
