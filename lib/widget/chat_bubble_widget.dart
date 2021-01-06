@@ -1,16 +1,19 @@
 import 'package:date_format/date_format.dart';
 import 'package:flutter/material.dart';
-import '../widget/avatar_widget.dart';
 import 'package:qiscus_chat_sdk/qiscus_chat_sdk.dart';
+
+import '../widget/avatar_widget.dart';
 
 class ChatBubble extends StatelessWidget {
   ChatBubble({
     @required this.message,
+    this.onPress,
     this.flipped = false,
   });
 
   final bool flipped;
   final QMessage message;
+  final void Function() onPress;
 
   @override
   Widget build(BuildContext context) {
@@ -41,24 +44,27 @@ class ChatBubble extends StatelessWidget {
                 Stack(
                   overflow: Overflow.visible,
                   children: <Widget>[
-                    Container(
-                      width: 200,
-                      alignment: flipped
-                          ? AlignmentDirectional.topEnd
-                          : AlignmentDirectional.topStart,
-                      decoration: BoxDecoration(
-                        color: Colors.black12,
-                        border: Border.fromBorderSide(BorderSide(
+                    GestureDetector(
+                      onLongPress: () => this.onPress?.call(),
+                      child: Container(
+                        width: 200,
+                        alignment: flipped
+                            ? AlignmentDirectional.topEnd
+                            : AlignmentDirectional.topStart,
+                        decoration: BoxDecoration(
                           color: Colors.black12,
-                          width: 1.0,
-                        )),
-                        borderRadius: BorderRadius.all(
-                          Radius.elliptical(5, 5),
+                          border: Border.fromBorderSide(BorderSide(
+                            color: Colors.black12,
+                            width: 1.0,
+                          )),
+                          borderRadius: BorderRadius.all(
+                            Radius.elliptical(5, 5),
+                          ),
                         ),
-                      ),
-                      child: Padding(
-                        padding: const EdgeInsets.all(8.0),
-                        child: Text(message.text),
+                        child: Padding(
+                          padding: const EdgeInsets.all(8.0),
+                          child: Text(message.text),
+                        ),
                       ),
                     ),
                     Positioned(

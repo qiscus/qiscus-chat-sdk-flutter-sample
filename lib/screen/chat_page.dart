@@ -248,6 +248,31 @@ class _ChatPageState extends State<ChatPage> {
                 return ChatBubble(
                   message: message,
                   flipped: sender.id == account.id,
+                  onPress: () {
+                    print('on message pressed: $message');
+                    // var snackbar = SnackBar(content: Text('Deleting message'));
+                    showModalBottomSheet(
+                      context: context,
+                      builder: (BuildContext context) {
+                        return FlatButton(
+                          child: const Text('Delete message'),
+                          onPressed: () {
+                            qiscus.deleteMessages(
+                                messageUniqueIds: [message.uniqueId],
+                                callback: (messages, error) {
+                                  Navigator.pop(context);
+                                  if (error != null) {
+                                    print(
+                                        'got error while deleting message: $error');
+                                  } else {
+                                    print('messages: $messages');
+                                  }
+                                });
+                          },
+                        );
+                      },
+                    );
+                  },
                 );
               },
             ),
