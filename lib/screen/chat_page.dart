@@ -312,6 +312,7 @@ class _ChatPageState extends State<ChatPage> {
                         controller: messageInputController,
                         keyboardType: TextInputType.text,
                         textInputAction: TextInputAction.send,
+                        onChanged: (_) => _publishTyping(),
                         onSubmitted: (_) => _sendMessage(),
                       ),
                     ),
@@ -327,6 +328,13 @@ class _ChatPageState extends State<ChatPage> {
         ],
       ),
     );
+  }
+
+  void _publishTyping() {
+    qiscus.publishTyping(roomId: room.id, isTyping: true);
+    Timer(const Duration(seconds: 1), () {
+      qiscus.publishTyping(roomId: room.id, isTyping: false);
+    });
   }
 
   void _onUpload() async {
