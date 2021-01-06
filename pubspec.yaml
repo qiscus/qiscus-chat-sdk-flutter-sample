@@ -3,7 +3,7 @@ description: Qiscus Chat SDK Sample Project
 version: 1.0.3+alpha1
 
 environment:
-  sdk: ">=2.7.0 <3.0.0"
+  sdk: '>=2.7.0 <3.0.0'
 
 dependencies:
   flutter:
@@ -19,15 +19,14 @@ dependencies:
   date_format: ^1.0.8
   cuid: ^0.1.2
   flutter_bloc:
-  qiscus_chat_sdk: ^1.0.4
-  rxdart:
+  qiscus_chat_sdk: 1.0.7
   grouped_list: ^3.2.3
   cupertino_icons: ^0.1.3
 
 # useful for local development
 dependency_overrides:
   qiscus_chat_sdk:
-    path: ../chat-core
+    path: ../qiscus-chat-sdk-flutter
 
 dev_dependencies:
   flutter_test:

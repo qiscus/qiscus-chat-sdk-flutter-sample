@@ -20,19 +20,38 @@ class MainApp extends StatefulWidget {
 class _MainAppState extends State<MainApp> {
   final qiscus = QiscusSDK();
   final firebase = FirebaseMessaging();
+  StreamSubscription<bool> _subs;
 
   @override
   void initState() {
     super.initState();
-    qiscus.enableDebugMode(enable: true, level: QLogLevel.verbose);
+    qiscus.enableDebugMode(enable: true);
 
     scheduleMicrotask(() {
+      _subs = Stream.periodic(const Duration(seconds: 3), (_) => qiscus.isLogin)
+          // .distinct((_, isLogin) => !isLogin)
+          .where((isLogin) => isLogin)
+          .listen((isLogin) {
+        if (isLogin) {
+          qiscus.publishOnlinePresence(
+              isOnline: isLogin,
+              callback: (error) {
+                print('error while publishing online presence: $error');
+              });
+        }
+      });
       firebase.configure(
         onMessage: (Map<String, dynamic> message) async {
-          print('got message');
+          // print('got message');
         },
       );
     });
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
+    _subs?.cancel();
   }
 
   @override

@@ -18,3 +18,4 @@ doc/api/
 
 /.idea
 /qiscus_chat_sdk.iml
+/.gradle
