@@ -78,6 +78,7 @@ class _ChatPageState extends State<ChatPage> {
         });
         messages.addEntries(entries);
         room = data.room;
+        data.messages.sort((m1, m2) => m1.timestamp.compareTo(m2.timestamp));
         if (data.messages.length > 0) {
           room.lastMessage = data.messages.last;
         }
@@ -103,17 +104,19 @@ class _ChatPageState extends State<ChatPage> {
 
       _onUserTyping();
       _onUserPresence();
-      qiscus.markAsRead(
-        roomId: room.id,
-        messageId: room.lastMessage.id,
-        callback: (err) {
-          if (this.mounted) {
-            setState(() {
-              this.room.unreadCount = 0;
-            });
-          }
-        },
-      );
+      if (room.lastMessage != null) {
+        qiscus.markAsRead(
+          roomId: room.id,
+          messageId: room.lastMessage.id,
+          callback: (err) {
+            if (this.mounted) {
+              setState(() {
+                this.room.unreadCount = 0;
+              });
+            }
+          },
+        );
+      }
     });
   }
 
