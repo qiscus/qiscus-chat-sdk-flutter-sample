@@ -466,8 +466,11 @@ class _ChatPageState extends State<ChatPage> {
   void _onUserTyping() {
     Timer timer;
 
-    _onUserTypingSubscription =
-        qiscus.onUserTyping$().takeWhile((_) => this.mounted).listen((typing) {
+    _onUserTypingSubscription = qiscus
+        .onUserTyping$()
+        .takeWhile((_) => this.mounted)
+        .where((t) => t.userId != qiscus.currentUser.id)
+        .listen((typing) {
       if (timer != null && timer.isActive) timer.cancel();
 
       setState(() {
