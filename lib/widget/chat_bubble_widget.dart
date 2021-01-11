@@ -63,7 +63,7 @@ class ChatBubble extends StatelessWidget {
                         ),
                         child: Padding(
                           padding: const EdgeInsets.all(8.0),
-                          child: Text(message.text),
+                          child: _buildChild(),
                         ),
                       ),
                     ),
@@ -125,5 +125,26 @@ class ChatBubble extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  Widget _buildChild() {
+    if (message.type == QMessageType.attachment) {
+      var progress = message.payload['progress'] ?? 0.0;
+      progress = progress / 100;
+      return Container(
+        child: Stack(
+          alignment: Alignment.bottomCenter,
+          children: [
+            if (message.payload['progress'] != null) ...[
+              // Image.file(File(message.payload['url'])),
+              LinearProgressIndicator(value: progress),
+            ],
+            if ((message.payload['url'] as String).startsWith('http'))
+              Image.network(message.payload['url']),
+          ],
+        ),
+      );
+    }
+    return Text(message.text);
   }
 }

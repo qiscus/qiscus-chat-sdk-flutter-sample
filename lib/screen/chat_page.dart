@@ -351,21 +351,51 @@ class _ChatPageState extends State<ChatPage> {
   void _onUpload() async {
     var file = await FilePicker.getFile(type: FileType.image);
     if (file != null) {
-      // do something with this file
-      var url = await qiscus.upload$(file);
       var message = qiscus.generateFileAttachmentMessage(
         chatRoomId: room.id,
         caption: file.path.split('/').last,
-        url: url,
+        url: file.uri.toString(),
         text: 'Image attachment',
         size: file.lengthSync(),
       );
-
+      message.payload['progress'] = 0;
       setState(() {
         this.messages.addAll({
           message.uniqueId: message,
         });
       });
+
+      var urlCompleter = Completer<String>();
+      qiscus.upload(
+        file: file,
+        callback: (error, progress, url) {
+          print('@upload: error($error), progress($progress), url($url)');
+          if (progress != null) {
+            setState(() {
+              this.messages.update(message.uniqueId, (m) {
+                m.payload['progress'] = progress;
+                return m;
+              });
+            });
+          }
+          if (error != null) {
+            urlCompleter.completeError(error);
+          }
+          if (url != null) {
+            urlCompleter.complete(url);
+          }
+        },
+      );
+      var url = await urlCompleter.future;
+
+      setState(() {
+        this.messages.update(message.uniqueId, (m) {
+          message.payload['url'] = url;
+          m.payload['url'] = url;
+          return m;
+        });
+      });
+
       var _message = await qiscus.sendMessage$(
         message: message,
       );
