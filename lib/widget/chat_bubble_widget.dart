@@ -1,5 +1,8 @@
 import 'package:date_format/date_format.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_downloader/flutter_downloader.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:qiscus_chat_sdk/qiscus_chat_sdk.dart';
 
 import '../widget/avatar_widget.dart';
@@ -168,7 +171,18 @@ class ChatBubble extends StatelessWidget {
               child: Row(
                 children: [
                   FlatButton(
-                    onPressed: () {},
+                    onPressed: () async {
+                      var status = await Permission.storage.request();
+                      if (status == PermissionStatus.granted) {
+                        var downloadFolder = await getExternalStorageDirectory()
+                            .then((d) => d.path);
+                        await FlutterDownloader.enqueue(
+                          url: message.payload['url'],
+                          savedDir: downloadFolder,
+                          showNotification: true,
+                        );
+                      }
+                    },
                     color: Colors.grey.withAlpha(60),
                     minWidth: 18,
                     child: Icon(Icons.file_download, size: 20),
