@@ -150,6 +150,17 @@ class ChatBubble extends StatelessWidget {
             ],
             if ((message.payload['url'] as String).startsWith('http'))
               Image.network(message.payload['url']),
+            Positioned(
+              bottom: 0,
+              left: 0,
+              child: FlatButton(
+                onPressed: () => _download(),
+                shape: CircleBorder(),
+                color: Colors.white.withAlpha(0x55),
+                minWidth: 14,
+                child: Icon(Icons.file_download, size: 18),
+              ),
+            ),
           ],
         ),
       );
@@ -171,18 +182,7 @@ class ChatBubble extends StatelessWidget {
               child: Row(
                 children: [
                   FlatButton(
-                    onPressed: () async {
-                      var status = await Permission.storage.request();
-                      if (status == PermissionStatus.granted) {
-                        var downloadFolder = await getExternalStorageDirectory()
-                            .then((d) => d.path);
-                        await FlutterDownloader.enqueue(
-                          url: message.payload['url'],
-                          savedDir: downloadFolder,
-                          showNotification: true,
-                        );
-                      }
-                    },
+                    onPressed: _download,
                     color: Colors.grey.withAlpha(60),
                     minWidth: 18,
                     child: Icon(Icons.file_download, size: 20),
@@ -199,6 +199,21 @@ class ChatBubble extends StatelessWidget {
       );
     }
     return Text(message.text);
+  }
+
+  void _download() async {
+    var status = await Permission.storage.request();
+    if (status == PermissionStatus.granted) {
+      var downloadFolder =
+          await getExternalStorageDirectory().then((d) => d.path);
+      await FlutterDownloader.enqueue(
+        url: message.payload['url'],
+        savedDir: downloadFolder,
+        showNotification: true,
+        openFileFromNotification: true,
+        fileName: message.payload['file_name'],
+      );
+    }
   }
 
   List<Widget> _buildStatus() {
