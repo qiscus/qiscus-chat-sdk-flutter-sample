@@ -35,12 +35,7 @@ class ChatBubble extends StatelessWidget {
               crossAxisAlignment:
                   flipped ? CrossAxisAlignment.end : CrossAxisAlignment.start,
               children: <Widget>[
-                Text(
-                  sender.name,
-                  style: TextStyle(
-                    fontSize: 12,
-                  ),
-                ),
+                _buildSender(sender),
                 Stack(
                   overflow: Overflow.visible,
                   children: <Widget>[
@@ -51,72 +46,15 @@ class ChatBubble extends StatelessWidget {
                         alignment: flipped
                             ? AlignmentDirectional.topEnd
                             : AlignmentDirectional.topStart,
-                        decoration: BoxDecoration(
-                          color: Colors.black12,
-                          border: Border.fromBorderSide(BorderSide(
-                            color: Colors.black12,
-                            width: 1.0,
-                          )),
-                          borderRadius: BorderRadius.all(
-                            Radius.elliptical(5, 5),
-                          ),
-                        ),
+                        decoration: _containerDecoration(),
                         child: Padding(
                           padding: const EdgeInsets.all(8.0),
                           child: _buildChild(),
                         ),
                       ),
                     ),
-                    Positioned(
-                      top: -10,
-                      right: !flipped ? 0 : null,
-                      left: flipped ? 0 : null,
-                      child: Text(
-                        message.timestamp.millisecondsSinceEpoch.toString(),
-                        style: TextStyle(
-                          fontSize: 8,
-                        ),
-                      ),
-                    ),
-                    if (flipped)
-                      Positioned(
-                        left: -32,
-                        bottom: 1,
-                        child: Text(
-                            formatDate(
-                              message.timestamp,
-                              [HH, ':', mm],
-                            ),
-                            style: TextStyle(
-                              fontSize: 12,
-                            )),
-                      ),
-                    if (!flipped)
-                      Positioned(
-                        right: -32,
-                        bottom: 1,
-                        child: Text(
-                            formatDate(
-                              message.timestamp,
-                              [HH, ':', mm],
-                            ),
-                            style: TextStyle(
-                              fontSize: 12,
-                            )),
-                      ),
-                    if (flipped)
-                      Positioned(
-                        top: 0,
-                        left: flipped ? -14 : null,
-                        right: !flipped ? -14 : null,
-                        child: Icon(
-                          Icons.done_all,
-                          size: 12,
-                          color: message.status == QMessageStatus.read
-                              ? Colors.lightGreen
-                              : Colors.grey,
-                        ),
-                      ),
+                    ..._buildTimestamp(),
+                    ..._buildStatus(),
                   ],
                 ),
               ],
@@ -127,10 +65,78 @@ class ChatBubble extends StatelessWidget {
     );
   }
 
+  BoxDecoration _containerDecoration() {
+    return BoxDecoration(
+      color: Colors.black12,
+      border: Border.fromBorderSide(BorderSide(
+        color: Colors.black12,
+        width: 1.0,
+      )),
+      borderRadius: BorderRadius.all(
+        Radius.elliptical(5, 5),
+      ),
+    );
+  }
+
+  List<Widget> _buildTimestamp() {
+    return [
+      Positioned(
+        top: -10,
+        right: !flipped ? 0 : null,
+        left: flipped ? 0 : null,
+        child: Text(
+          message.timestamp.millisecondsSinceEpoch.toString(),
+          style: TextStyle(
+            fontSize: 8,
+          ),
+        ),
+      ),
+      if (flipped)
+        Positioned(
+          left: -32,
+          bottom: 1,
+          child: Text(
+              formatDate(
+                message.timestamp,
+                [HH, ':', mm],
+              ),
+              style: TextStyle(
+                fontSize: 12,
+              )),
+        ),
+      if (!flipped)
+        Positioned(
+          right: -32,
+          bottom: 1,
+          child: Text(
+              formatDate(
+                message.timestamp,
+                [HH, ':', mm],
+              ),
+              style: TextStyle(
+                fontSize: 12,
+              )),
+        ),
+    ];
+  }
+
+  Text _buildSender(QUser sender) {
+    return Text(
+      sender.name,
+      style: TextStyle(
+        fontSize: 12,
+      ),
+    );
+  }
+
   Widget _buildChild() {
-    if (message.type == QMessageType.attachment) {
-      var progress = message.payload['progress'] ?? 0.0;
-      progress = progress / 100;
+    String url = message.payload['url'];
+    var uri = Uri.parse(url);
+    var isImage = uri.toString().contains(RegExp(r'(jpe?g|png|gif)$'));
+    var progress = message.payload['progress'] ?? 0.0;
+    progress = progress / 100;
+
+    if (message.type == QMessageType.attachment && isImage) {
       return Container(
         child: Stack(
           alignment: Alignment.bottomCenter,
@@ -145,6 +151,59 @@ class ChatBubble extends StatelessWidget {
         ),
       );
     }
+    if (message.type == QMessageType.attachment && !isImage) {
+      return Container(
+        child: Stack(
+          alignment: Alignment.bottomCenter,
+          children: [
+            if (message.payload['progress'] != null) ...[
+              // Image.file(File(message.payload['url'])),
+              LinearProgressIndicator(value: progress),
+            ],
+            Container(
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(3.0),
+              ),
+              child: Row(
+                children: [
+                  FlatButton(
+                    onPressed: () {},
+                    color: Colors.grey.withAlpha(60),
+                    minWidth: 18,
+                    child: Icon(Icons.file_download, size: 20),
+                    shape: CircleBorder(),
+                  ),
+                  Text(message.payload['file_name']),
+                ],
+              ),
+            ),
+            if ((message.payload['caption'] as String).isNotEmpty)
+              Text(message.payload['caption']),
+          ],
+        ),
+      );
+    }
     return Text(message.text);
+  }
+
+  List<Widget> _buildStatus() {
+    if (flipped)
+      return [
+        Positioned(
+          top: 0,
+          left: flipped ? -14 : null,
+          right: !flipped ? -14 : null,
+          child: Icon(
+            Icons.done_all,
+            size: 12,
+            color: message.status == QMessageStatus.read
+                ? Colors.lightGreen
+                : Colors.grey,
+          ),
+        )
+      ];
+    else
+      return [];
   }
 }
