@@ -133,6 +133,8 @@ class ChatBubble extends StatelessWidget {
   }
 
   Widget _buildChild() {
+    if (message.payload == null || message.payload?.isEmpty == true)
+      return Text(message.text);
     String url = message.payload['url'];
     var uri = Uri.parse(url);
     var isImage = uri.toString().contains(RegExp(r'(jpe?g|png|gif)$'));
