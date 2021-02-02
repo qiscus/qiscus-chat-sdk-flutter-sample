@@ -19,3 +19,5 @@ doc/api/
 /.idea
 /qiscus_chat_sdk.iml
 /.gradle
+.DS_Store
+GoogleService-Info.plist

@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:collection';
 
 import 'package:date_format/date_format.dart';
+import 'package:emoji_picker/emoji_picker.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -308,6 +309,23 @@ class _ChatPageState extends State<ChatPage> {
                 IconButton(
                   onPressed: _onUpload,
                   icon: Icon(Icons.attach_file),
+                ),
+                IconButton(
+                  icon: Icon(Icons.emoji_emotions),
+                  onPressed: () {
+                    //
+                    showDialog(
+                      context: context,
+                      builder: (context) {
+                        return EmojiPicker(
+                          onEmojiSelected: (emoji, category) {
+                            print('emoji($emoji) category($category)');
+                            messageInputController.text += emoji.emoji;
+                          },
+                        );
+                      },
+                    );
+                  },
                 ),
                 Expanded(
                   child: Padding(

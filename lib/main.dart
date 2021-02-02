@@ -9,7 +9,7 @@ import 'package:qiscus_chat_sdk/qiscus_chat_sdk.dart';
 
 import 'screen/login_page.dart';
 
-Future<void> main() async {
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await FlutterDownloader.initialize();
   runApp(MainApp());
