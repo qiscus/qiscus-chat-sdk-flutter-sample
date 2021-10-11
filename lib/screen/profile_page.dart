@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:qiscus_chat_sdk/qiscus_chat_sdk.dart';
 
 import '../constants.dart';
+import '../extensions.dart';
 
 class ProfilePage extends StatefulWidget {
   ProfilePage({
@@ -82,9 +83,11 @@ class _ProfilePageState extends State<ProfilePage> {
                   right: 10,
                   child: IconButton(
                     onPressed: () async {
-                      var file = await FilePicker.getFile(type: FileType.image);
+                      var file = await FilePicker.platform
+                          .getFile(type: FileType.image);
                       if (file != null) {
-                        var snackbar = SnackBar(content: Text('Updating user avatar...'));
+                        var snackbar =
+                            SnackBar(content: Text('Updating user avatar...'));
                         scaffoldKey.currentState.showSnackBar(snackbar);
 
                         var account = await Future.microtask(() async {
@@ -130,7 +133,8 @@ class _ProfilePageState extends State<ProfilePage> {
                       labelText: 'Username',
                     ),
                     onSubmitted: (name) async {
-                      var snackbar = SnackBar(content: Text('Updating user...'));
+                      var snackbar =
+                          SnackBar(content: Text('Updating user...'));
                       scaffoldKey.currentState.showSnackBar(snackbar);
 
                       qiscus.updateUser(

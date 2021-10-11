@@ -135,7 +135,7 @@ class _CreateRoomPageState extends State<CreateRoomPage> {
                             : Image.file(this.selectedImage).image,
                       ),
                       onTap: () async {
-                        var file = await FilePicker.getFile(
+                        var file = await FilePicker.platform.getFile(
                           type: FileType.image,
                         );
                         setState(() {

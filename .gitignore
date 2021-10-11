@@ -1,7 +1,7 @@
 
-/.flutter-plugins
-/.flutter-plugins-dependencies
-/.packages
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
 
 # Files and directories created by pub
 .dart_tool/
@@ -16,8 +16,8 @@ build/
 # Directory created by dartdoc
 doc/api/
 
-/.idea
-/qiscus_chat_sdk.iml
-/.gradle
+.idea/
+qiscus_chat_sdk.iml
+.gradle
 .DS_Store
 GoogleService-Info.plist

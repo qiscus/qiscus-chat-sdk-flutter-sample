@@ -53,7 +53,7 @@ class _RoomListPageState extends State<RoomListPage> {
         if (err != null) {
           throw err;
         }
-        if (err == null) {
+        if (err == null && mounted) {
           var entries = rooms.map((r) => MapEntry(r.id, r));
           setState(() {
             this.rooms.addEntries(entries);

@@ -8,24 +8,19 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  qiscus_chat_sdk: 1.0.10
-  firebase_messaging: ^6.0.16
-  timeago: ^2.0.26
-  provider: ^4.1.3
-  async:
-  fluttertoast: ^4.0.1
-  file_picker: ^1.10.0
-  freezed_annotation:
-  fluro: ^1.6.3
-  date_format: ^1.0.8
-  cuid: ^0.1.2
-  flutter_bloc:
-  grouped_list: ^3.2.3
-  cupertino_icons: ^0.1.3
-  flutter_downloader: ^1.5.2
-  permission_handler: ^5.0.1+1
-  path_provider: ^1.6.27
-  emoji_picker: ^0.1.0
+  qiscus_chat_sdk: 1.0.18
+  cupertino_icons: ^1.0.3
+  firebase_core: ^1.7.0
+  firebase_messaging: ^10.0.8
+  timeago: ^3.1.0
+  provider: ^6.0.1
+  file_picker: ^4.1.3
+  date_format: ^2.0.4
+  grouped_list: ^4.1.0
+  flutter_downloader: ^1.7.1
+  permission_handler: ^8.2.2
+  path_provider: ^2.0.5
+  emoji_picker_flutter: ^1.0.7
 
 # useful for local development
 # dependency_overrides:
@@ -35,8 +30,6 @@ dependencies:
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  build_runner:
-  freezed:
 
 flutter:
   uses-material-design: true

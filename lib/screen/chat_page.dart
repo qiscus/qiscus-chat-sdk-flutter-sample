@@ -1,8 +1,9 @@
 import 'dart:async';
 import 'dart:collection';
+import 'dart:io';
 
 import 'package:date_format/date_format.dart';
-import 'package:emoji_picker/emoji_picker.dart';
+import 'package:emoji_picker_flutter/emoji_picker_flutter.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -45,6 +46,7 @@ class _ChatPageState extends State<ChatPage> {
   String userTyping;
   DateTime lastOnline;
   bool isOnline = false;
+  bool isEmojiPickerExpanded = false;
 
   var messages = HashMap<String, QMessage>();
 
@@ -313,18 +315,9 @@ class _ChatPageState extends State<ChatPage> {
                 IconButton(
                   icon: Icon(Icons.emoji_emotions),
                   onPressed: () {
-                    //
-                    showDialog(
-                      context: context,
-                      builder: (context) {
-                        return EmojiPicker(
-                          onEmojiSelected: (emoji, category) {
-                            print('emoji($emoji) category($category)');
-                            messageInputController.text += emoji.emoji;
-                          },
-                        );
-                      },
-                    );
+                    setState(() {
+                      isEmojiPickerExpanded = !isEmojiPickerExpanded;
+                    });
                   },
                 ),
                 Expanded(
@@ -354,6 +347,20 @@ class _ChatPageState extends State<ChatPage> {
               ],
             ),
           ),
+          if (isEmojiPickerExpanded)
+            Container(
+              height: 250,
+              color: Colors.blueGrey,
+              child: EmojiPicker(
+                config: Config(
+
+                ),
+                onEmojiSelected: (category, emoji) {
+                  print('emoji($emoji) category($category)');
+                  messageInputController.text += emoji.emoji;
+                },
+              ),
+            ),
         ],
       ),
     );
@@ -367,14 +374,14 @@ class _ChatPageState extends State<ChatPage> {
   }
 
   void _onUpload() async {
-    var file = await FilePicker.getFile(type: FileType.image);
+    var file = await FilePicker.platform.getFile(type: FileType.image);
     if (file != null) {
       var message = qiscus.generateFileAttachmentMessage(
         chatRoomId: room.id,
         caption: file.path.split('/').last,
         url: file.uri.toString(),
         text: 'Image attachment',
-        size: file.lengthSync(),
+        size: await file.length(),
       );
       message.payload['progress'] = 0;
       setState(() {

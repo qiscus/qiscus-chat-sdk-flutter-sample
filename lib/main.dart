@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -11,6 +12,8 @@ import 'screen/login_page.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp();
+  FirebaseMessaging.onBackgroundMessage(_onBackgroundMessage);
   await FlutterDownloader.initialize();
   runApp(MainApp());
 }
@@ -22,32 +25,28 @@ class MainApp extends StatefulWidget {
 
 class _MainAppState extends State<MainApp> {
   final qiscus = QiscusSDK();
-  final firebase = FirebaseMessaging();
+  final firebase = FirebaseMessaging.instance;
   StreamSubscription<bool> _subs;
 
   @override
   void initState() {
     super.initState();
-    qiscus.enableDebugMode(enable: true);
+    qiscus.enableDebugMode(enable: false);
 
-    scheduleMicrotask(() {
-      _subs = Stream.periodic(const Duration(seconds: 3), (_) => qiscus.isLogin)
-          .where((isLogin) => isLogin)
-          .listen((isLogin) {
-        if (isLogin) {
-          qiscus.publishOnlinePresence(
-              isOnline: isLogin,
-              callback: (error) {
-                print('error while publishing online presence: $error');
-              });
-        }
-      });
-      firebase.configure(
-        onMessage: (Map<String, dynamic> message) async {
-          // print('got message');
+    _subs = Stream.periodic(
+      const Duration(seconds: 3),
+      (_) => qiscus.isLogin && this.mounted,
+    ).where((it) => it).listen((_) {
+      qiscus.publishOnlinePresence(
+        isOnline: true,
+        callback: (error) {
+          if (error != null) {
+            print('error while publishing online presence: $error');
+          }
         },
       );
     });
+    // FirebaseMessaging.onMessage.listen((message) {});
   }
 
   @override
@@ -56,22 +55,54 @@ class _MainAppState extends State<MainApp> {
     _subs?.cancel();
   }
 
+  Future<void> _initializeApp() async {
+    await Firebase.initializeApp();
+    FirebaseMessaging.onMessage.listen((message) {
+      var data = message.data;
+      print('@got-fcm-message');
+      print('title: ${message.notification.title}');
+      print('body: ${message.notification.body}');
+      print('data: $data');
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
-    return MultiProvider(
-      providers: [
-        Provider<QiscusSDK>.value(value: qiscus),
-        Provider<FirebaseMessaging>.value(value: firebase),
-        ProxyProvider<QiscusSDK, QAccount>(
-          create: (_) => qiscus.currentUser,
-          update: (_, qiscus, account) => qiscus.currentUser,
-        ),
-      ],
-      child: MaterialApp(
-        home: LoginPage(qiscus: qiscus),
-        // theme: ThemeData.dark(),
-        debugShowCheckedModeBanner: false,
-      ),
+    var stream = _initializeApp().asStream();
+    var builder = StreamBuilder(
+      builder: _child,
+      stream: stream,
     );
+
+    return builder;
   }
+
+  Widget _child(BuildContext context, AsyncSnapshot snapshot) {
+    if (snapshot.connectionState == ConnectionState.done) {
+      // if (snapshot.hasData) {
+      return MultiProvider(
+        providers: [
+          Provider<QiscusSDK>.value(value: qiscus),
+          Provider<FirebaseMessaging>.value(value: firebase),
+          ProxyProvider<QiscusSDK, QAccount>(
+            create: (_) => qiscus.currentUser,
+            update: (_, qiscus, account) => qiscus.currentUser,
+          ),
+        ],
+        child: MaterialApp(
+          home: LoginPage(qiscus: qiscus),
+          // theme: ThemeData.dark(),
+          debugShowCheckedModeBanner: false,
+        ),
+      );
+    } else {
+      return CircularProgressIndicator();
+    }
+  }
+}
+
+Future<void> _onBackgroundMessage(RemoteMessage message) async {
+  print('@bg-message');
+  print('title: ${message.notification.title}');
+  print('body: ${message.notification.body}');
 }

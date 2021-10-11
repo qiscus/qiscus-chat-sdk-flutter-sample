@@ -133,11 +133,13 @@ class ChatBubble extends StatelessWidget {
   }
 
   Widget _buildChild() {
-    if (message.payload == null || message.payload?.isEmpty == true)
+    if (message.payload == null || message.payload?.isEmpty == true) {
       return Text(message.text);
+    }
+
     String url = message.payload['url'];
-    var uri = Uri.parse(url);
-    var isImage = uri.toString().contains(RegExp(r'(jpe?g|png|gif)$'));
+    // var uri = Uri.parse(url);
+    var isImage = url?.contains(RegExp(r'(jpe?g|png|gif)$')) ?? false;
     var progress = message.payload['progress'] ?? 0.0;
     progress = progress / 100;
 

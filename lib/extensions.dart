@@ -1,3 +1,6 @@
+import 'dart:io';
+
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 
 extension BuildContextX on BuildContext {
@@ -21,5 +24,15 @@ extension BuildContextX on BuildContext {
       this,
       MaterialPageRoute(builder: (context) => widget),
     );
+  }
+}
+
+extension FilePickerX on FilePicker {
+  Future<File> getFile({type: FileType}) async {
+    var result = await this.pickFiles(type: type);
+    if (result?.files?.first != null) {
+      return File(result.files.first.path);
+    }
+    return null;
   }
 }

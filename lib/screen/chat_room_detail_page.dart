@@ -102,8 +102,8 @@ class _ChatRoomDetailPageState extends State<ChatRoomDetailPage> {
                     right: 10,
                     child: IconButton(
                       onPressed: () async {
-                        var file =
-                            await FilePicker.getFile(type: FileType.image);
+                        var file = await FilePicker.platform
+                            .getFile(type: FileType.image);
                         if (file != null) {
                           var room = await Future.microtask(() async {
                             var url = await qiscus.upload$(file);

@@ -124,6 +124,7 @@ class _LoginPageState extends State<LoginPage> {
                             );
 
                             final token = await firebase.getToken();
+                            print('device token: $token');
                             await qiscus.registerDeviceToken$(token: token);
 
                             scaffoldKey.currentState?.hideCurrentSnackBar();
