@@ -11,9 +11,9 @@ import 'add_participant_page.dart';
 
 class ChatRoomDetailPage extends StatefulWidget {
   ChatRoomDetailPage({
-    @required this.qiscus,
-    @required this.account,
-    @required this.room,
+    required this.qiscus,
+    required this.account,
+    required this.room,
   });
 
   final QiscusSDK qiscus;
@@ -25,9 +25,9 @@ class ChatRoomDetailPage extends StatefulWidget {
 }
 
 class _ChatRoomDetailPageState extends State<ChatRoomDetailPage> {
-  QiscusSDK qiscus;
-  QAccount account;
-  QChatRoom room;
+  late QiscusSDK qiscus = widget.qiscus;
+  late QAccount account = widget.account;
+  late QChatRoom room = widget.room;
 
   @override
   void initState() {
@@ -38,9 +38,10 @@ class _ChatRoomDetailPageState extends State<ChatRoomDetailPage> {
     room = widget.room;
 
     scheduleMicrotask(() async {
-      var rooms = await qiscus.getChatRooms$(roomIds: [
-        this.room.id,
-      ], showParticipants: true);
+      var rooms = await qiscus.getChatRooms(
+        roomIds: [this.room.id],
+        showParticipants: true,
+      );
 
       setState(() {
         this.room = rooms.first;
@@ -51,7 +52,7 @@ class _ChatRoomDetailPageState extends State<ChatRoomDetailPage> {
   @override
   Widget build(BuildContext context) {
     final isSingle = room.type == QRoomType.single;
-    final isChannel = room.type == QRoomType.channel;
+    // final isChannel = room.type == QRoomType.channel;
 
     return Scaffold(
       appBar: AppBar(
@@ -61,7 +62,7 @@ class _ChatRoomDetailPageState extends State<ChatRoomDetailPage> {
           },
           icon: Icon(Icons.arrow_back),
         ),
-        title: Text(room.name),
+        title: Text(room.name!),
       ),
       floatingActionButton: !isSingle
           ? FloatingActionButton(
@@ -72,7 +73,7 @@ class _ChatRoomDetailPageState extends State<ChatRoomDetailPage> {
                   room: this.room,
                 ));
                 setState(() {
-                  this.room = room;
+                  this.room = room!;
                 });
               },
               child: Icon(Icons.add),
@@ -91,7 +92,7 @@ class _ChatRoomDetailPageState extends State<ChatRoomDetailPage> {
                     height: 200,
                     width: double.infinity,
                     child: Image.network(
-                      room.avatarUrl,
+                      room.avatarUrl!,
                       fit: BoxFit.cover,
                     ),
                   ),
@@ -106,17 +107,13 @@ class _ChatRoomDetailPageState extends State<ChatRoomDetailPage> {
                             .getFile(type: FileType.image);
                         if (file != null) {
                           var room = await Future.microtask(() async {
-                            var url = await qiscus.upload$(file);
+                            var stream = qiscus.upload(file);
                             var completer = Completer<QChatRoom>();
-                            qiscus.updateChatRoom(
+                            var _progress = await stream.last;
+                            var url = _progress.data!;
+                            await qiscus.updateChatRoom(
                               roomId: this.room.id,
                               avatarUrl: url,
-                              callback: (room, error) {
-                                if (error != null) {
-                                  return completer.completeError(error);
-                                }
-                                return completer.complete(room);
-                              },
                             );
                             return completer.future;
                           });
@@ -140,10 +137,10 @@ class _ChatRoomDetailPageState extends State<ChatRoomDetailPage> {
                   var user = this.room.participants[index];
                   return ListTile(
                     title: Text(user.name),
-                    leading: Avatar(url: user.avatarUrl),
+                    leading: Avatar(url: user.avatarUrl!),
                     trailing: IconButton(
                       onPressed: () async {
-                        await qiscus.removeParticipants$(
+                        await qiscus.removeParticipants(
                             roomId: room.id, userIds: [user.id]);
                         setState(() {
                           this

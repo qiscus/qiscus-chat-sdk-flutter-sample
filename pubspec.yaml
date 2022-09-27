@@ -1,14 +1,14 @@
 name: qiscus_chat_sample
 description: Qiscus Chat SDK Sample Project
-version: 1.0.3+alpha1
+version: 2.0.0
 
 environment:
-  sdk: '>=2.7.0 <3.0.0'
+  sdk: '>=2.12.0 <3.0.0'
 
 dependencies:
   flutter:
     sdk: flutter
-  qiscus_chat_sdk: 1.0.18
+  qiscus_chat_sdk: 2.0.0-beta.7
   cupertino_icons: ^1.0.3
   firebase_core: ^1.7.0
   firebase_messaging: ^10.0.8
@@ -16,11 +16,11 @@ dependencies:
   provider: ^6.0.1
   file_picker: ^4.1.3
   date_format: ^2.0.4
-  grouped_list: ^4.1.0
+  grouped_list: ^5.1.2
   flutter_downloader: ^1.7.1
   permission_handler: ^8.2.2
   path_provider: ^2.0.5
-  emoji_picker_flutter: ^1.0.7
+  # emoji_picker_flutter: ^1.0.7
 
 # useful for local development
 # dependency_overrides:

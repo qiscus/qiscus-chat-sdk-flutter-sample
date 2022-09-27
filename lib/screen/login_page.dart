@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -11,7 +9,7 @@ import 'room_list_page.dart';
 
 class LoginPage extends StatefulWidget {
   LoginPage({
-    @required this.qiscus,
+    required this.qiscus,
   });
 
   final QiscusSDK qiscus;
@@ -86,7 +84,7 @@ class _LoginPageState extends State<LoginPage> {
                         userNameController.text = value;
                       },
                       validator: (value) {
-                        if (value.contains(RegExp(r'(\s+)'))) {
+                        if (value?.contains(RegExp(r'(\s+)')) == true) {
                           return 'Can not contains whitespace character';
                         }
                         return null;
@@ -97,7 +95,7 @@ class _LoginPageState extends State<LoginPage> {
                       decoration: _inputDecoration('User Key'),
                       controller: userKeyController,
                       validator: (value) {
-                        if (value.contains(RegExp(r'(\s+)'))) {
+                        if (value?.contains(RegExp(r'(\s+)')) == true) {
                           return 'Can not contains whitespace character';
                         }
                         return null;
@@ -108,16 +106,18 @@ class _LoginPageState extends State<LoginPage> {
                       decoration: _inputDecoration('Username'),
                       controller: userNameController,
                     ),
-                    RaisedButton(
+                    ElevatedButton(
                       onPressed: () async {
-                        if (formKey.currentState.validate()) {
+                        if (formKey.currentState?.validate() == true) {
                           try {
                             final snackbar = SnackBar(
                               content: Text('Loading...'),
                             );
-                            scaffoldKey.currentState.showSnackBar(snackbar);
-                            await widget.qiscus.setup$(APP_ID);
-                            final account = await widget.qiscus.setUser$(
+                            ScaffoldMessenger.of(context)
+                                .showSnackBar(snackbar);
+
+                            await widget.qiscus.setup(APP_ID);
+                            final account = await widget.qiscus.setUser(
                               userId: userIdController.text,
                               userKey: userKeyController.text,
                               username: userNameController.text,
@@ -125,9 +125,11 @@ class _LoginPageState extends State<LoginPage> {
 
                             final token = await firebase.getToken();
                             print('device token: $token');
-                            await qiscus.registerDeviceToken$(token: token);
+                            if (token != null) {
+                              await qiscus.registerDeviceToken(token: token);
+                            }
 
-                            scaffoldKey.currentState?.hideCurrentSnackBar();
+                            ScaffoldMessenger.of(context).hideCurrentSnackBar();
 
                             context.pushReplacement(RoomListPage(
                               qiscus: widget.qiscus,
@@ -138,13 +140,11 @@ class _LoginPageState extends State<LoginPage> {
                               content: Text(error.message),
                               duration: const Duration(seconds: 2),
                             );
-                            scaffoldKey.currentState.showSnackBar(snackbar);
+                            ScaffoldMessenger.of(context)
+                                .showSnackBar(snackbar);
                           }
                         }
                       },
-                      color: Theme.of(context).primaryColor,
-                      textColor:
-                          Theme.of(context).primaryTextTheme.button.color,
                       child: Text('Login'),
                     ),
                   ],

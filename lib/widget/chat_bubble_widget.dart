@@ -9,14 +9,14 @@ import '../widget/avatar_widget.dart';
 
 class ChatBubble extends StatelessWidget {
   ChatBubble({
-    @required this.message,
+    required this.message,
     this.onPress,
     this.flipped = false,
   });
 
   final bool flipped;
   final QMessage message;
-  final void Function() onPress;
+  final void Function()? onPress;
 
   @override
   Widget build(BuildContext context) {
@@ -30,7 +30,7 @@ class ChatBubble extends StatelessWidget {
         // textDirection: TextDirection.rtl,
         textDirection: flipped ? TextDirection.rtl : TextDirection.ltr,
         children: <Widget>[
-          Avatar(url: sender.avatarUrl),
+          Avatar(url: sender.avatarUrl!),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 8.0),
             child: Column(
@@ -40,7 +40,6 @@ class ChatBubble extends StatelessWidget {
               children: <Widget>[
                 _buildSender(sender),
                 Stack(
-                  overflow: Overflow.visible,
                   children: <Widget>[
                     GestureDetector(
                       onLongPress: () => this.onPress?.call(),
@@ -137,10 +136,9 @@ class ChatBubble extends StatelessWidget {
       return Text(message.text);
     }
 
-    String url = message.payload['url'];
-    // var uri = Uri.parse(url);
+    String? url = message.payload?['url'];
     var isImage = url?.contains(RegExp(r'(jpe?g|png|gif)$')) ?? false;
-    var progress = message.payload['progress'] ?? 0.0;
+    var progress = message.payload?['progress'] ?? 0.0;
     progress = progress / 100;
 
     if (message.type == QMessageType.attachment && isImage) {
@@ -148,20 +146,22 @@ class ChatBubble extends StatelessWidget {
         child: Stack(
           alignment: Alignment.bottomCenter,
           children: [
-            if (message.payload['progress'] != null) ...[
+            if (message.payload?['progress'] != null) ...[
               // Image.file(File(message.payload['url'])),
               LinearProgressIndicator(value: progress),
             ],
-            if ((message.payload['url'] as String).startsWith('http'))
-              Image.network(message.payload['url']),
+            if ((message.payload?['url'] as String).startsWith('http'))
+              Image.network(message.payload?['url']),
             Positioned(
               bottom: 0,
               left: 0,
-              child: FlatButton(
+              child: TextButton(
                 onPressed: () => _download(),
-                shape: CircleBorder(),
-                color: Colors.white.withAlpha(0x55),
-                minWidth: 14,
+                style: TextButton.styleFrom(
+                  shape: CircleBorder(),
+                  minimumSize: Size.fromWidth(14),
+                  primary: Colors.white.withAlpha(0x55),
+                ),
                 child: Icon(Icons.file_download, size: 18),
               ),
             ),
@@ -174,7 +174,7 @@ class ChatBubble extends StatelessWidget {
         child: Stack(
           alignment: Alignment.bottomCenter,
           children: [
-            if (message.payload['progress'] != null) ...[
+            if (message.payload?['progress'] != null) ...[
               // Image.file(File(message.payload['url'])),
               LinearProgressIndicator(value: progress),
             ],
@@ -185,19 +185,16 @@ class ChatBubble extends StatelessWidget {
               ),
               child: Row(
                 children: [
-                  FlatButton(
+                  TextButton(
                     onPressed: _download,
-                    color: Colors.grey.withAlpha(60),
-                    minWidth: 18,
                     child: Icon(Icons.file_download, size: 20),
-                    shape: CircleBorder(),
                   ),
-                  Text(message.payload['file_name']),
+                  Text(message.payload?['file_name']),
                 ],
               ),
             ),
-            if ((message.payload['caption'] as String).isNotEmpty)
-              Text(message.payload['caption']),
+            if ((message.payload?['caption'] as String).isNotEmpty)
+              Text(message.payload?['caption']),
           ],
         ),
       );
@@ -208,15 +205,17 @@ class ChatBubble extends StatelessWidget {
   void _download() async {
     var status = await Permission.storage.request();
     if (status == PermissionStatus.granted) {
-      var downloadFolder =
-          await getExternalStorageDirectory().then((d) => d.path);
-      await FlutterDownloader.enqueue(
-        url: message.payload['url'],
-        savedDir: downloadFolder,
-        showNotification: true,
-        openFileFromNotification: true,
-        fileName: message.payload['file_name'],
-      );
+      var folder = await getExternalStorageDirectory();
+      if (folder != null) {
+        var downloadFolder = folder.path;
+        await FlutterDownloader.enqueue(
+          url: message.payload?['url'],
+          savedDir: downloadFolder,
+          showNotification: true,
+          openFileFromNotification: true,
+          fileName: message.payload?['file_name'],
+        );
+      }
     }
   }
 

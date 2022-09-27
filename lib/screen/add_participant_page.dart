@@ -8,9 +8,9 @@ import '../extensions.dart';
 
 class AddParticipantPage extends StatefulWidget {
   AddParticipantPage({
-    @required this.qiscus,
-    @required this.account,
-    @required this.room,
+    required this.qiscus,
+    required this.account,
+    required this.room,
   });
 
   final QiscusSDK qiscus;
@@ -22,9 +22,9 @@ class AddParticipantPage extends StatefulWidget {
 }
 
 class _AddParticipantPageState extends State<AddParticipantPage> {
-  QiscusSDK qiscus;
-  QAccount account;
-  QChatRoom room;
+  late QiscusSDK qiscus = widget.qiscus;
+  late QAccount account = widget.account;
+  late QChatRoom room = widget.room;
 
   List<QUser> users = [];
   List<QUser> selectedUsers = [];
@@ -32,12 +32,9 @@ class _AddParticipantPageState extends State<AddParticipantPage> {
   @override
   void initState() {
     super.initState();
-    qiscus = widget.qiscus;
-    account = widget.account;
-    room = widget.room;
 
     scheduleMicrotask(() async {
-      var users = await qiscus.getUsers$(limit: 100);
+      var users = await qiscus.getUsers(limit: 100);
       setState(() {
         this.users = users;
       });
@@ -59,7 +56,7 @@ class _AddParticipantPageState extends State<AddParticipantPage> {
           FlatButton(
             onPressed: () async {
               var userIds = this.selectedUsers.map((it) => it.id).toList();
-              var participants = await qiscus.addParticipants$(
+              var participants = await qiscus.addParticipants(
                 roomId: room.id,
                 userIds: userIds,
               );
@@ -84,7 +81,9 @@ class _AddParticipantPageState extends State<AddParticipantPage> {
             var isSelected = this.selectedUsers.any((u) => u.id == user.id);
 
             return ListTile(
-              leading: Avatar(url: user.avatarUrl),
+              leading: Avatar(
+                url: user.avatarUrl ?? 'https://via.placeholder.com/200',
+              ),
               title: Text(user.name),
               subtitle: Text(user.id),
               trailing: isSelected ? Icon(Icons.check_circle_outline) : null,

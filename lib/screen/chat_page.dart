@@ -1,11 +1,9 @@
 import 'dart:async';
 import 'dart:collection';
-import 'dart:io';
 
 import 'package:date_format/date_format.dart';
-import 'package:emoji_picker_flutter/emoji_picker_flutter.dart';
+// import 'package:emoji_picker_flutter/emoji_picker_flutter.dart';
 import 'package:file_picker/file_picker.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:grouped_list/grouped_list.dart';
 import 'package:qiscus_chat_sdk/qiscus_chat_sdk.dart';
@@ -28,9 +26,9 @@ class ChatPage extends StatefulWidget {
   final QChatRoom room;
 
   ChatPage({
-    @required this.qiscus,
-    @required this.account,
-    @required this.room,
+    required this.qiscus,
+    required this.account,
+    required this.room,
   });
 
   @override
@@ -38,40 +36,47 @@ class ChatPage extends StatefulWidget {
 }
 
 class _ChatPageState extends State<ChatPage> {
-  QiscusSDK qiscus;
-  QAccount account;
-  QChatRoom room;
+  late QiscusSDK qiscus = widget.qiscus;
+  late QAccount account = widget.account;
+  late QChatRoom room = widget.room;
 
   bool isUserTyping = false;
-  String userTyping;
-  DateTime lastOnline;
+  String? userTyping;
+  DateTime? lastOnline;
   bool isOnline = false;
   bool isEmojiPickerExpanded = false;
 
   var messages = HashMap<String, QMessage>();
 
-  StreamSubscription<QMessage> _onMessageReceivedSubscription;
-  StreamSubscription<QMessage> _onMessageReadSubscription;
-  StreamSubscription<QMessage> _onMessageDeliveredSubscription;
-
   final messageInputController = TextEditingController();
   final scrollController = ScrollController();
 
-  StreamSubscription<QMessage> _onMessageDeletedSubscription;
+  StreamSubscription<QUserTyping>? _onUserTypingSubscription;
+  StreamSubscription<QUserPresence>? _onUserPresenceSubscription;
 
-  StreamSubscription<QUserTyping> _onUserTypingSubscription;
-
-  StreamSubscription<QUserPresence> _onUserPresenceSubscription;
+  late StreamSubscription<QMessage> _onMessageReceivedSubscription = qiscus
+      .onMessageReceived()
+      .takeWhile((_) => this.mounted)
+      .listen(_onMessageReceived);
+  late StreamSubscription<QMessage> _onMessageDeliveredSubscription = qiscus
+      .onMessageDelivered()
+      .takeWhile((_) => this.mounted)
+      .listen((it) => _onMessageDelivered(it.uniqueId));
+  late StreamSubscription<QMessage> _onMessageReadSubscription = qiscus
+      .onMessageRead()
+      .takeWhile((_) => this.mounted)
+      .listen((it) => _onMessageRead(it.uniqueId));
+  late StreamSubscription<QMessage> _onMessageDeletedSubscription = qiscus
+      .onMessageDeleted()
+      .takeWhile((_) => this.mounted)
+      .listen((it) => _onMessageDeleted(it.uniqueId));
 
   @override
   void initState() {
     super.initState();
-    qiscus = widget.qiscus;
-    account = widget.account;
-    room = widget.room;
 
     scheduleMicrotask(() async {
-      var data = await qiscus.getChatRoomWithMessages$(roomId: room.id);
+      var data = await qiscus.getChatRoomWithMessages(roomId: room.id);
       setState(() {
         var entries = data.messages.map((m) {
           return MapEntry(
@@ -88,37 +93,13 @@ class _ChatPageState extends State<ChatPage> {
       });
 
       qiscus.subscribeChatRoom(room);
-      _onMessageReceivedSubscription = qiscus
-          .onMessageReceived$()
-          .takeWhile((_) => this.mounted)
-          .listen(_onMessageReceived);
-      _onMessageDeliveredSubscription = qiscus
-          .onMessageDelivered$()
-          .takeWhile((_) => this.mounted)
-          .listen((it) => _onMessageDelivered(it.uniqueId));
-      _onMessageReadSubscription = qiscus
-          .onMessageRead$()
-          .takeWhile((_) => this.mounted)
-          .listen((it) => _onMessageRead(it.uniqueId));
-      _onMessageDeletedSubscription = qiscus
-          .onMessageDeleted$()
-          .takeWhile((_) => this.mounted)
-          .listen((it) => _onMessageDeleted(it.uniqueId));
 
       _onUserTyping();
       _onUserPresence();
       if (room.lastMessage != null) {
-        qiscus.markAsRead(
-          roomId: room.id,
-          messageId: room.lastMessage.id,
-          callback: (err) {
-            if (this.mounted) {
-              setState(() {
-                this.room.unreadCount = 0;
-              });
-            }
-          },
-        );
+        qiscus
+            .markAsRead(roomId: room.id, messageId: room.lastMessage!.id)
+            .then((_) => setState(() => this.room.unreadCount = 0));
       }
     });
   }
@@ -127,10 +108,10 @@ class _ChatPageState extends State<ChatPage> {
   void dispose() {
     super.dispose();
     qiscus.unsubscribeChatRoom(room);
-    _onMessageReceivedSubscription?.cancel();
-    _onMessageDeliveredSubscription?.cancel();
-    _onMessageReadSubscription?.cancel();
-    _onMessageDeletedSubscription?.cancel();
+    _onMessageReceivedSubscription.cancel();
+    _onMessageDeliveredSubscription.cancel();
+    _onMessageReadSubscription.cancel();
+    _onMessageDeletedSubscription.cancel();
     _onUserTypingSubscription?.cancel();
     _onUserPresenceSubscription?.cancel();
   }
@@ -162,7 +143,7 @@ class _ChatPageState extends State<ChatPage> {
               flex: 0,
               child: Hero(
                 tag: HeroTags.roomAvatar(roomId: room.id),
-                child: Avatar(url: room.avatarUrl),
+                child: Avatar(url: room.avatarUrl!),
               ),
             ),
             Expanded(
@@ -172,13 +153,13 @@ class _ChatPageState extends State<ChatPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: <Widget>[
-                    Text(room.name),
+                    Text(room.name!),
                     if (room.type == QRoomType.single && !isUserTyping)
                       Text(
                         isOnline
                             ? 'Online'
                             : lastOnline != null
-                                ? timeago.format(lastOnline)
+                                ? timeago.format(lastOnline!)
                                 : 'Offline',
                         style: TextStyle(
                           fontSize: 10,
@@ -226,16 +207,8 @@ class _ChatPageState extends State<ChatPage> {
                   break;
                 case _PopupMenu.clearMessages:
                   qiscus.clearMessagesByChatRoomId(
-                      roomUniqueIds: [this.room.uniqueId],
-                      callback: (error) {
-                        if (error != null) {
-                          print('got error while clearing room: $error');
-                        } else {
-                          setState(() {
-                            this.messages.clear();
-                          });
-                        }
-                      });
+                    roomUniqueIds: [this.room.uniqueId],
+                  ).then((_) => setState(() => this.messages.clear()));
                   break;
                 default:
                   break;
@@ -282,20 +255,12 @@ class _ChatPageState extends State<ChatPage> {
                     showModalBottomSheet(
                       context: context,
                       builder: (BuildContext context) {
-                        return FlatButton(
+                        return TextButton(
                           child: const Text('Delete message'),
                           onPressed: () {
                             qiscus.deleteMessages(
-                                messageUniqueIds: [message.uniqueId],
-                                callback: (messages, error) {
-                                  Navigator.pop(context);
-                                  if (error != null) {
-                                    print(
-                                        'got error while deleting message: $error');
-                                  } else {
-                                    print('messages: $messages');
-                                  }
-                                });
+                              messageUniqueIds: [message.uniqueId],
+                            ).then((_) => Navigator.pop(context));
                           },
                         );
                       },
@@ -347,20 +312,18 @@ class _ChatPageState extends State<ChatPage> {
               ],
             ),
           ),
-          if (isEmojiPickerExpanded)
-            Container(
-              height: 250,
-              color: Colors.blueGrey,
-              child: EmojiPicker(
-                config: Config(
-
-                ),
-                onEmojiSelected: (category, emoji) {
-                  print('emoji($emoji) category($category)');
-                  messageInputController.text += emoji.emoji;
-                },
-              ),
-            ),
+          // if (isEmojiPickerExpanded)
+          //   Container(
+          //     height: 250,
+          //     color: Colors.blueGrey,
+          //     child: EmojiPicker(
+          //       config: Config(),
+          //       onEmojiSelected: (category, emoji) {
+          //         print('emoji($emoji) category($category)');
+          //         messageInputController.text += emoji.emoji;
+          //       },
+          //     ),
+          //   ),
         ],
       ),
     );
@@ -383,7 +346,7 @@ class _ChatPageState extends State<ChatPage> {
         text: 'Image attachment',
         size: await file.length(),
       );
-      message.payload['progress'] = 0;
+      message.payload?['progress'] = 0;
       setState(() {
         this.messages.addAll({
           message.uniqueId: message,
@@ -391,39 +354,35 @@ class _ChatPageState extends State<ChatPage> {
       });
 
       var urlCompleter = Completer<String>();
-      qiscus.upload(
-        file: file,
-        callback: (error, progress, url) {
-          print('@upload: error($error), progress($progress), url($url)');
-          if (progress != null) {
-            setState(() {
-              this.messages.update(message.uniqueId, (m) {
-                m.payload['progress'] = progress;
-                return m;
-              });
-            });
-          }
-          if (error != null) {
-            urlCompleter.completeError(error);
-          }
-          if (url != null) {
-            urlCompleter.complete(url);
-          }
-        },
-      );
+      var stream = qiscus.upload(file);
+      stream.listen((progress) {
+        var _progress = progress.progress;
+        var url = progress.data;
+        print('@upload: progress($_progress), url($url)');
+        setState(() {
+          this.messages.update(message.uniqueId, (m) {
+            m.payload?['progress'] = progress;
+            return m;
+          });
+        });
+
+        if (url != null) {
+          urlCompleter.complete(url);
+        }
+      }, onError: (error) {
+        urlCompleter.completeError(error);
+      });
       var url = await urlCompleter.future;
 
       setState(() {
         this.messages.update(message.uniqueId, (m) {
-          message.payload['url'] = url;
-          m.payload['url'] = url;
+          message.payload?['url'] = url;
+          m.payload?['url'] = url;
           return m;
         });
       });
 
-      var _message = await qiscus.sendMessage$(
-        message: message,
-      );
+      var _message = await qiscus.sendMessage(message: message);
       setState(() {
         this.messages.update(message.uniqueId, (value) {
           return _message;
@@ -444,7 +403,7 @@ class _ChatPageState extends State<ChatPage> {
       }, ifAbsent: () => message);
     });
 
-    var _message = await qiscus.sendMessage$(message: message);
+    var _message = await qiscus.sendMessage(message: message);
     setState(() {
       this.messages.update(_message.uniqueId, (m) {
         return _message;
@@ -468,12 +427,12 @@ class _ChatPageState extends State<ChatPage> {
         message.uniqueId: message,
       });
 
-      if (lastMessage.timestamp.isBefore(message.timestamp)) {
+      if (lastMessage?.timestamp.isBefore(message.timestamp) == true) {
         room.lastMessage = message;
       }
     });
     if (message.chatRoomId == room.id) {
-      await qiscus.markAsRead$(roomId: room.id, messageId: message.id);
+      await qiscus.markAsRead(roomId: room.id, messageId: message.id);
     }
   }
 
@@ -519,14 +478,14 @@ class _ChatPageState extends State<ChatPage> {
   }
 
   void _onUserTyping() {
-    Timer timer;
+    late Timer? timer;
 
     _onUserTypingSubscription = qiscus
-        .onUserTyping$()
+        .onUserTyping()
         .takeWhile((_) => this.mounted)
-        .where((t) => t.userId != qiscus.currentUser.id)
+        .where((t) => t.userId != qiscus.currentUser?.id)
         .listen((typing) {
-      if (timer != null && timer.isActive) timer.cancel();
+      if (timer != null && timer?.isActive == true) timer?.cancel();
 
       setState(() {
         isUserTyping = true;
@@ -545,19 +504,20 @@ class _ChatPageState extends State<ChatPage> {
   void _onUserPresence() {
     if (room.type != QRoomType.single) return;
 
-    var partnerId =
-        room.participants.where((it) => it.id != account.id).first?.id;
-    if (partnerId == null) return;
+    try {
+      var partnerId =
+          room.participants.where((it) => it.id != account.id).first.id;
 
-    qiscus.subscribeUserOnlinePresence(partnerId);
-    _onUserPresenceSubscription = qiscus
-        .onUserOnlinePresence$()
-        .where((it) => it.userId == partnerId)
-        .listen((data) {
-      setState(() {
-        this.isOnline = data.isOnline;
-        this.lastOnline = data.lastOnline;
+      qiscus.subscribeUserOnlinePresence(partnerId);
+      _onUserPresenceSubscription = qiscus
+          .onUserOnlinePresence()
+          .where((it) => it.userId == partnerId)
+          .listen((data) {
+        setState(() {
+          this.isOnline = data.isOnline;
+          this.lastOnline = data.lastSeen;
+        });
       });
-    });
+    } on StateError {}
   }
 }

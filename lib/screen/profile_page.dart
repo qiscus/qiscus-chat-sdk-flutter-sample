@@ -9,8 +9,8 @@ import '../extensions.dart';
 
 class ProfilePage extends StatefulWidget {
   ProfilePage({
-    @required this.qiscus,
-    @required this.account,
+    required this.qiscus,
+    required this.account,
   });
 
   final QiscusSDK qiscus;
@@ -21,11 +21,13 @@ class ProfilePage extends StatefulWidget {
 }
 
 class _ProfilePageState extends State<ProfilePage> {
-  QiscusSDK qiscus;
-  QAccount account;
+  late QiscusSDK qiscus = widget.qiscus;
+  late QAccount account = widget.account;
 
-  TextEditingController accountIdController;
-  TextEditingController accountNameController;
+  late TextEditingController accountIdController =
+      TextEditingController(text: account.id);
+  late TextEditingController accountNameController =
+      TextEditingController(text: account.name);
 
   bool isEditing = false;
 
@@ -36,12 +38,10 @@ class _ProfilePageState extends State<ProfilePage> {
     super.initState();
     qiscus = widget.qiscus;
     account = widget.account;
-    accountIdController = TextEditingController(text: account.id);
-    accountNameController = TextEditingController(text: account.name);
 
     scheduleMicrotask(() async {
-      qiscus.getUserData(callback: (account, err) {
-        if (err != null && this.mounted) {
+      await qiscus.getUserData().then((account) {
+        if (this.mounted) {
           setState(() {
             this.account = account;
             accountNameController.text = account.name;
@@ -73,7 +73,7 @@ class _ProfilePageState extends State<ProfilePage> {
                     height: 200,
                     width: double.infinity,
                     child: Image.network(
-                      account.avatarUrl,
+                      account.avatarUrl!,
                       fit: BoxFit.cover,
                     ),
                   ),
@@ -88,15 +88,16 @@ class _ProfilePageState extends State<ProfilePage> {
                       if (file != null) {
                         var snackbar =
                             SnackBar(content: Text('Updating user avatar...'));
-                        scaffoldKey.currentState.showSnackBar(snackbar);
+                        ScaffoldMessenger.of(context).showSnackBar(snackbar);
 
                         var account = await Future.microtask(() async {
-                          var url = await qiscus.upload$(file);
-                          return await qiscus.updateUser$(
-                            avatarUrl: url,
-                          );
+                          var url = await qiscus
+                              .upload(file)
+                              .firstWhere((r) => r.data != null)
+                              .then((r) => r.data!);
+                          return await qiscus.updateUser(avatarUrl: url);
                         });
-                        scaffoldKey.currentState.hideCurrentSnackBar();
+                        ScaffoldMessenger.of(context).hideCurrentSnackBar();
 
                         if (this.mounted) {
                           setState(() {
@@ -135,21 +136,17 @@ class _ProfilePageState extends State<ProfilePage> {
                     onSubmitted: (name) async {
                       var snackbar =
                           SnackBar(content: Text('Updating user...'));
-                      scaffoldKey.currentState.showSnackBar(snackbar);
+                      ScaffoldMessenger.of(context).showSnackBar(snackbar);
 
-                      qiscus.updateUser(
-                        name: name,
-                        callback: (account, _err) {
-                          if (_err == null) {
-                            print('sukses update account: $account');
-                            setState(() {
-                              isEditing = false;
-                              this.account = account;
-                            });
-                          }
-                          scaffoldKey.currentState.hideCurrentSnackBar();
-                        },
-                      );
+                      qiscus.updateUser(name: name).then((r) {
+                        print('sukses update account: $account');
+                        setState(() {
+                          isEditing = false;
+                          this.account = account;
+                        });
+
+                        ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                      });
                     },
                     onEditingComplete: () {
                       setState(() {

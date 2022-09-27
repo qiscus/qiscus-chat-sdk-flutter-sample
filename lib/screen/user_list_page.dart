@@ -11,8 +11,8 @@ import 'create_room_page.dart';
 
 class UserListPage extends StatefulWidget {
   UserListPage({
-    @required this.qiscus,
-    @required this.account,
+    required this.qiscus,
+    required this.account,
   });
 
   final QiscusSDK qiscus;
@@ -23,8 +23,8 @@ class UserListPage extends StatefulWidget {
 }
 
 class _UserListPageState extends State<UserListPage> {
-  QiscusSDK qiscus;
-  QAccount account;
+  late QiscusSDK qiscus = widget.qiscus;
+  late QAccount account = widget.account;
   var users = HashMap<String, QUser>();
 
   @override
@@ -34,7 +34,7 @@ class _UserListPageState extends State<UserListPage> {
     this.account = widget.account;
 
     scheduleMicrotask(() async {
-      var _users = await qiscus.getUsers$(limit: 100);
+      var _users = await qiscus.getUsers(limit: 100);
       setState(() {
         users.addEntries(_users.map((u) => MapEntry(u.id, u)));
       });
@@ -74,7 +74,7 @@ class _UserListPageState extends State<UserListPage> {
             final user = _users.elementAt(index);
 
             return ListTile(
-              leading: Avatar(url: user.avatarUrl),
+              leading: Avatar(url: user.avatarUrl!),
               title: Text(user.name.isEmpty ? 'No name' : user.name),
               subtitle: Text(
                 user.id,
@@ -83,7 +83,7 @@ class _UserListPageState extends State<UserListPage> {
                 ),
               ),
               onTap: () async {
-                var room = await qiscus.chatUser$(userId: user.id);
+                var room = await qiscus.chatUser(userId: user.id);
                 context.pushReplacement(ChatPage(
                   qiscus: qiscus,
                   account: account,

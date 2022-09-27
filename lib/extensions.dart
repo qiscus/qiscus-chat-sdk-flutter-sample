@@ -4,11 +4,11 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 
 extension BuildContextX on BuildContext {
-  void pop<T extends Object>([T result]) {
+  void pop<T extends Object>([T? result]) {
     Navigator.pop(this, result);
   }
 
-  Future<T> push<T extends Object>(Widget widget) async {
+  Future<T?> push<T extends Object>(Widget widget) async {
     return Navigator.push<T>(
       this,
       MaterialPageRoute(
@@ -17,7 +17,7 @@ extension BuildContextX on BuildContext {
     );
   }
 
-  Future<T> pushReplacement<T extends Object, TO extends Object>(
+  Future<T?> pushReplacement<T extends Object, TO extends Object>(
     Widget widget,
   ) async {
     return Navigator.pushReplacement<T, TO>(
@@ -28,10 +28,10 @@ extension BuildContextX on BuildContext {
 }
 
 extension FilePickerX on FilePicker {
-  Future<File> getFile({type: FileType}) async {
+  Future<File?> getFile({type: FileType}) async {
     var result = await this.pickFiles(type: type);
-    if (result?.files?.first != null) {
-      return File(result.files.first.path);
+    if (result?.files.first != null) {
+      return File(result!.files.first.path!);
     }
     return null;
   }

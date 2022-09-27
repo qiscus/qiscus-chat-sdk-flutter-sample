@@ -11,8 +11,8 @@ import 'chat_page.dart';
 
 class CreateRoomPage extends StatefulWidget {
   CreateRoomPage({
-    @required this.qiscus,
-    @required this.account,
+    required this.qiscus,
+    required this.account,
   });
 
   final QiscusSDK qiscus;
@@ -23,11 +23,12 @@ class CreateRoomPage extends StatefulWidget {
 }
 
 class _CreateRoomPageState extends State<CreateRoomPage> {
-  QiscusSDK qiscus;
-  QAccount account;
+  late QiscusSDK qiscus = widget.qiscus;
+  late QAccount account = widget.account;
+
   List<QUser> users = [];
-  File selectedImage;
-  String setectedName;
+  File? selectedImage;
+  String? setectedName;
   List<QUser> selectedUser = [];
   final selectedNameController = TextEditingController(text: '');
 
@@ -36,11 +37,9 @@ class _CreateRoomPageState extends State<CreateRoomPage> {
   @override
   void initState() {
     super.initState();
-    qiscus = widget.qiscus;
-    account = widget.account;
 
     scheduleMicrotask(() async {
-      var users = await qiscus.getUsers$(limit: 100);
+      var users = await qiscus.getUsers(limit: 100);
       setState(() {
         this.users = users;
       });
@@ -60,7 +59,7 @@ class _CreateRoomPageState extends State<CreateRoomPage> {
         ),
         title: Text('Create room'),
         actions: <Widget>[
-          FlatButton(
+          TextButton(
             onPressed: () async {
               var name = this.selectedNameController.text;
               var avatar = this.selectedImage;
@@ -68,14 +67,14 @@ class _CreateRoomPageState extends State<CreateRoomPage> {
 
               var snackbar = SnackBar(content: Text(''));
 
-              String avatarUrl;
+              String? avatarUrl;
 
               if (name.isEmpty) {
                 snackbar = SnackBar(
                   content: Text('Room name cannot be empty'),
                   duration: const Duration(seconds: 1),
                 );
-                scaffoldKey.currentState.showSnackBar(snackbar);
+                ScaffoldMessenger.of(context).showSnackBar(snackbar);
                 return;
               }
               if (userIds.length == 0) {
@@ -83,33 +82,42 @@ class _CreateRoomPageState extends State<CreateRoomPage> {
                   content: Text('Participant can not be empty'),
                   duration: const Duration(seconds: 1),
                 );
-                scaffoldKey.currentState.showSnackBar(snackbar);
+
+                ScaffoldMessenger.of(context).showSnackBar(snackbar);
                 return;
               }
 
               if (avatar != null) {
-                avatarUrl = await qiscus.upload$(avatar);
+                avatarUrl = await qiscus
+                    .upload(avatar)
+                    .firstWhere((r) => r.data != null)
+                    .then((r) => r.data!);
               }
 
               snackbar = SnackBar(
                 content: Text('Creating room'),
               );
-              scaffoldKey.currentState.showSnackBar(snackbar);
+              ScaffoldMessenger.of(context).showSnackBar(snackbar);
 
-              var room = await qiscus.createGroupChat$(
+              var room = await qiscus.createGroupChat(
                 name: name,
                 userIds: userIds,
                 avatarUrl: avatarUrl,
               );
 
-              scaffoldKey.currentState.hideCurrentSnackBar();
+              ScaffoldMessenger.of(context).hideCurrentSnackBar();
+
               context.pushReplacement(ChatPage(
                 qiscus: qiscus,
                 account: account,
                 room: room,
               ));
             },
-            textColor: Colors.white,
+            style: TextButton.styleFrom(
+              textStyle: TextStyle(
+                color: Colors.white,
+              ),
+            ),
             child: Text('Create'),
           ),
         ],
@@ -132,7 +140,7 @@ class _CreateRoomPageState extends State<CreateRoomPage> {
                             ? Image.asset(
                                 'assets/ic-default-avatar.png',
                               ).image
-                            : Image.file(this.selectedImage).image,
+                            : Image.file(this.selectedImage!).image,
                       ),
                       onTap: () async {
                         var file = await FilePicker.platform.getFile(
@@ -170,7 +178,7 @@ class _CreateRoomPageState extends State<CreateRoomPage> {
                   return ListTile(
                     title: Text(user.name),
                     subtitle: Text(user.id),
-                    leading: Avatar(url: user.avatarUrl),
+                    leading: Avatar(url: user.avatarUrl!),
                     trailing:
                         selected ? Icon(Icons.check_circle_outline) : null,
                     selected: selected,
