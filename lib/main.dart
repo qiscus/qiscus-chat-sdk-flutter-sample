@@ -1,4 +1,6 @@
 import 'dart:async';
+import 'dart:isolate';
+import 'dart:ui';
 
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
@@ -10,14 +12,16 @@ import 'package:qiscus_chat_sdk/qiscus_chat_sdk.dart';
 import 'screen/login_page.dart';
 
 void main() async {
-  // WidgetsFlutterBinding.ensureInitialized();
+  WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp();
-  FirebaseMessaging.onBackgroundMessage(_onBackgroundMessage);
+  // FirebaseMessaging.onBackgroundMessage(_onBackgroundMessage);
   await FlutterDownloader.initialize();
-  runApp(MainApp());
+  runApp(const MainApp());
 }
 
 class MainApp extends StatefulWidget {
+  const MainApp({Key? key}) : super(key: key);
+
   @override
   _MainAppState createState() => _MainAppState();
 }
@@ -26,6 +30,7 @@ class _MainAppState extends State<MainApp> {
   final qiscus = QiscusSDK();
   final firebase = FirebaseMessaging.instance;
   StreamSubscription<bool>? _subs;
+  final _port = ReceivePort('DOWNLOADED');
 
   @override
   void initState() {
@@ -39,12 +44,42 @@ class _MainAppState extends State<MainApp> {
       qiscus.publishOnlinePresence(isOnline: true);
     });
     // FirebaseMessaging.onMessage.listen((message) {});
+
+    _port.listen((dynamic data) {
+      String taskId = data[0];
+      DownloadTaskStatus status = data[1];
+      int progress = data[2];
+
+      print('@LISTEN taskId($taskId) progress($progress) status($status)');
+      if (progress == 100 && status == DownloadTaskStatus.complete) {
+        FlutterDownloader.open(taskId: taskId);
+      }
+    });
+    IsolateNameServer.registerPortWithName(
+      _port.sendPort,
+      'downloader_send_port',
+    );
+    FlutterDownloader.registerCallback(downloadCallback);
+  }
+
+  static void downloadCallback(
+      String taskId, DownloadTaskStatus status, int progress) {
+    var send = IsolateNameServer.lookupPortByName('downloader_send_port');
+    print('@CB taskId($taskId) progress($progress) status($status)');
+
+    if (send != null) {
+      send.send([taskId, status, progress]);
+    } else {
+      print('`send` are null');
+    }
   }
 
   @override
   void dispose() {
-    super.dispose();
+    IsolateNameServer.removePortNameMapping('downloader_send_port');
     _subs?.cancel();
+
+    super.dispose();
   }
 
   Future<void> _initializeApp() async {

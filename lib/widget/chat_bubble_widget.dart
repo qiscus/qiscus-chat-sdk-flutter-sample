@@ -1,7 +1,7 @@
 import 'package:date_format/date_format.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_downloader/flutter_downloader.dart';
-import 'package:path_provider/path_provider.dart';
+import 'package:path_provider/path_provider.dart' as path;
 import 'package:permission_handler/permission_handler.dart';
 import 'package:qiscus_chat_sdk/qiscus_chat_sdk.dart';
 
@@ -205,16 +205,20 @@ class ChatBubble extends StatelessWidget {
   void _download() async {
     var status = await Permission.storage.request();
     if (status == PermissionStatus.granted) {
-      var folder = await getExternalStorageDirectory();
+      // var folder = await path.getExternalStorageDirectory();
+      var folder = await path.getApplicationDocumentsDirectory();
       if (folder != null) {
         var downloadFolder = folder.path;
-        await FlutterDownloader.enqueue(
+        var r = await FlutterDownloader.enqueue(
           url: message.payload?['url'],
           savedDir: downloadFolder,
           showNotification: true,
           openFileFromNotification: true,
           fileName: message.payload?['file_name'],
         );
+        if (r != null) {
+          print('download: $r');
+        }
       }
     }
   }

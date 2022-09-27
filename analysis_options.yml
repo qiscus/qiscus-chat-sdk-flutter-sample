@@ -1,4 +1,0 @@
-analyzer:
-  enable-experiment:
-    - control-flow-collections
-  exclude: ['**/*.g.dart', '**/*.freezed.dart']
