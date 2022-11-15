@@ -28,7 +28,6 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
-
-dependency_overrides:
-  qiscus_chat_sdk:
-    path: ../qiscus-chat-sdk-flutter
+# dependency_overrides:
+#   qiscus_chat_sdk:
+#     path: ../qiscus-chat-sdk-flutter
