@@ -37,6 +37,10 @@ class _MainAppState extends State<MainApp> {
     super.initState();
     qiscus.enableDebugMode(enable: false);
 
+    qiscus.onMessageReceived().listen((v) {
+      print('from sample, message received $v');
+    });
+
     _subs = Stream.periodic(
       const Duration(seconds: 3),
       (_) => qiscus.isLogin && this.mounted,

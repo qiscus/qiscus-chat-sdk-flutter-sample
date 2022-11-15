@@ -1,3 +1,5 @@
+// ignore_for_file: unnecessary_this
+
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -7,7 +9,8 @@ import '../widget/avatar_widget.dart';
 import '../extensions.dart';
 
 class AddParticipantPage extends StatefulWidget {
-  AddParticipantPage({
+  const AddParticipantPage({
+    super.key,
     required this.qiscus,
     required this.account,
     required this.room,
@@ -18,10 +21,10 @@ class AddParticipantPage extends StatefulWidget {
   final QChatRoom room;
 
   @override
-  _AddParticipantPageState createState() => _AddParticipantPageState();
+  createState() => AddParticipantPageState();
 }
 
-class _AddParticipantPageState extends State<AddParticipantPage> {
+class AddParticipantPageState extends State<AddParticipantPage> {
   late QiscusSDK qiscus = widget.qiscus;
   late QAccount account = widget.account;
   late QChatRoom room = widget.room;
@@ -49,56 +52,58 @@ class _AddParticipantPageState extends State<AddParticipantPage> {
           onPressed: () {
             context.pop(room);
           },
-          icon: Icon(Icons.arrow_back),
+          icon: const Icon(Icons.arrow_back),
         ),
-        title: Text('Add participant'),
+        title: const Text('Add participant'),
         actions: <Widget>[
-          FlatButton(
+          TextButton(
             onPressed: () async {
-              var userIds = this.selectedUsers.map((it) => it.id).toList();
+              var userIds = selectedUsers.map((it) => it.id).toList();
               var participants = await qiscus.addParticipants(
                 roomId: room.id,
                 userIds: userIds,
               );
-              participants.addAll(this.room.participants);
+              participants.addAll(room.participants);
 
               setState(() {
-                this.room.participants = participants;
+                room.participants = participants;
                 this.room.totalParticipants = this.room.participants.length;
               });
-              context.pop(this.room);
+              await Navigator.maybePop(context, this.room);
+              // context.pop(this.room);
             },
-            child: Text('Add'),
-            textColor: Colors.white,
+            style: TextButton.styleFrom(
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Add'),
           ),
         ],
       ),
-      body: Container(
-        child: ListView.builder(
-          itemCount: this.users.length,
-          itemBuilder: (context, index) {
-            var user = this.users[index];
-            var isSelected = this.selectedUsers.any((u) => u.id == user.id);
+      body: ListView.builder(
+        itemCount: users.length,
+        itemBuilder: (context, index) {
+          var user = users[index];
+          var isSelected = selectedUsers.any((u) => u.id == user.id);
 
-            return ListTile(
-              leading: Avatar(
-                url: user.avatarUrl ?? 'https://via.placeholder.com/200',
-              ),
-              title: Text(user.name),
-              subtitle: Text(user.id),
-              trailing: isSelected ? Icon(Icons.check_circle_outline) : null,
-              onTap: () {
-                setState(() {
-                  if (isSelected) {
-                    this.selectedUsers.removeWhere((e) => e.id == user.id);
-                  } else {
-                    this.selectedUsers.add(user);
-                  }
-                });
-              },
-            );
-          },
-        ),
+          return ListTile(
+            leading: Avatar(
+              url: user.avatarUrl ?? 'https://via.placeholder.com/200',
+            ),
+            title: Text(user.name),
+            subtitle: Text(user.id),
+            trailing:
+                isSelected ? const Icon(Icons.check_circle_outline) : null,
+            onTap: () {
+              setState(() {
+                if (isSelected) {
+                  selectedUsers.removeWhere((e) => e.id == user.id);
+                } else {
+                  selectedUsers.add(user);
+                }
+              });
+            },
+          );
+        },
       ),
     );
   }
