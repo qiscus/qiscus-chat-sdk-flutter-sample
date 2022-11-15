@@ -54,26 +54,31 @@ class _ChatPageState extends State<ChatPage> {
   StreamSubscription<QUserTyping>? _onUserTypingSubscription;
   StreamSubscription<QUserPresence>? _onUserPresenceSubscription;
 
-  late StreamSubscription<QMessage> _onMessageReceivedSubscription = qiscus
-      .onMessageReceived()
-      .takeWhile((_) => this.mounted)
-      .listen(_onMessageReceived);
-  late StreamSubscription<QMessage> _onMessageDeliveredSubscription = qiscus
-      .onMessageDelivered()
-      .takeWhile((_) => this.mounted)
-      .listen((it) => _onMessageDelivered(it.uniqueId));
-  late StreamSubscription<QMessage> _onMessageReadSubscription = qiscus
-      .onMessageRead()
-      .takeWhile((_) => this.mounted)
-      .listen((it) => _onMessageRead(it.uniqueId));
-  late StreamSubscription<QMessage> _onMessageDeletedSubscription = qiscus
-      .onMessageDeleted()
-      .takeWhile((_) => this.mounted)
-      .listen((it) => _onMessageDeleted(it.uniqueId));
+  StreamSubscription<QMessage>? _onMessageReceivedSubscription;
+  StreamSubscription<QMessage>? _onMessageDeliveredSubscription;
+  StreamSubscription<QMessage>? _onMessageReadSubscription;
+  StreamSubscription<QMessage>? _onMessageDeletedSubscription;
 
   @override
   void initState() {
     super.initState();
+
+    _onMessageReceivedSubscription = qiscus
+        .onMessageReceived()
+        .takeWhile((_) => mounted)
+        .listen(_onMessageReceived);
+    _onMessageDeliveredSubscription = qiscus
+        .onMessageDelivered()
+        .takeWhile((_) => mounted)
+        .listen((it) => _onMessageDelivered(it.uniqueId));
+    _onMessageReadSubscription = qiscus
+        .onMessageRead()
+        .takeWhile((_) => mounted)
+        .listen((it) => _onMessageRead(it.uniqueId));
+    _onMessageDeletedSubscription = qiscus
+        .onMessageDeleted()
+        .takeWhile((_) => mounted)
+        .listen((it) => _onMessageDeleted(it.uniqueId));
 
     scheduleMicrotask(() async {
       var data = await qiscus.getChatRoomWithMessages(roomId: room.id);
@@ -108,10 +113,10 @@ class _ChatPageState extends State<ChatPage> {
   void dispose() {
     super.dispose();
     qiscus.unsubscribeChatRoom(room);
-    _onMessageReceivedSubscription.cancel();
-    _onMessageDeliveredSubscription.cancel();
-    _onMessageReadSubscription.cancel();
-    _onMessageDeletedSubscription.cancel();
+    _onMessageReceivedSubscription?.cancel();
+    _onMessageDeliveredSubscription?.cancel();
+    _onMessageReadSubscription?.cancel();
+    _onMessageDeletedSubscription?.cancel();
     _onUserTypingSubscription?.cancel();
     _onUserPresenceSubscription?.cancel();
   }
@@ -423,7 +428,7 @@ class _ChatPageState extends State<ChatPage> {
   Future<void> _onMessageReceived(QMessage message) async {
     final lastMessage = room.lastMessage;
     setState(() {
-      this.messages.addAll({
+      messages.addAll({
         message.uniqueId: message,
       });
 
@@ -478,11 +483,11 @@ class _ChatPageState extends State<ChatPage> {
   }
 
   void _onUserTyping() {
-    late Timer? timer;
+    Timer? timer;
 
     _onUserTypingSubscription = qiscus
         .onUserTyping()
-        .takeWhile((_) => this.mounted)
+        .takeWhile((_) => mounted)
         .where((t) => t.userId != qiscus.currentUser?.id)
         .listen((typing) {
       if (timer != null && timer?.isActive == true) timer?.cancel();
