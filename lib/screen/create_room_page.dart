@@ -3,30 +3,22 @@ import 'dart:io';
 
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:qiscus_chat_sdk/qiscus_chat_sdk.dart';
 
 import '../extensions.dart';
+import '../qiscus_util.dart';
 import '../widget/avatar_widget.dart';
 import 'chat_page.dart';
 
 class CreateRoomPage extends StatefulWidget {
-  CreateRoomPage({
-    required this.qiscus,
-    required this.account,
-  });
-
-  final QiscusSDK qiscus;
-  final QAccount account;
+  const CreateRoomPage({super.key});
 
   @override
-  _CreateRoomPageState createState() => _CreateRoomPageState();
+  CreateRoomPageState createState() => CreateRoomPageState();
 }
 
-class _CreateRoomPageState extends State<CreateRoomPage> {
-  late QiscusSDK qiscus = widget.qiscus;
-  late QAccount account = widget.account;
-
-  List<QUser> users = [];
+class CreateRoomPageState extends State<CreateRoomPage> {
   File? selectedImage;
   String? setectedName;
   List<QUser> selectedUser = [];
@@ -34,171 +26,172 @@ class _CreateRoomPageState extends State<CreateRoomPage> {
 
   var scaffoldKey = GlobalKey<ScaffoldState>();
 
-  @override
-  void initState() {
-    super.initState();
-
-    scheduleMicrotask(() async {
-      var users = await qiscus.getUsers(limit: 100);
-      setState(() {
-        this.users = users;
-      });
-    });
+  Future<void> _initializePage(BuildContext context) async {
+    await context.read<QiscusUtil>().getUsers();
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      key: scaffoldKey,
-      appBar: AppBar(
-        leading: IconButton(
-          onPressed: () {
-            context.pop();
-          },
-          icon: Icon(Icons.arrow_back),
-        ),
-        title: Text('Create room'),
-        actions: <Widget>[
-          TextButton(
-            onPressed: () async {
-              var name = this.selectedNameController.text;
-              var avatar = this.selectedImage;
-              var userIds = this.selectedUser.map((e) => e.id).toList();
+    var users = context.select<QiscusUtil, List<QUser>>(
+      (it) => it.users.toList(),
+    );
 
-              var snackbar = SnackBar(content: Text(''));
-
-              String? avatarUrl;
-
-              if (name.isEmpty) {
-                snackbar = SnackBar(
-                  content: Text('Room name cannot be empty'),
-                  duration: const Duration(seconds: 1),
-                );
-                ScaffoldMessenger.of(context).showSnackBar(snackbar);
-                return;
-              }
-              if (userIds.length == 0) {
-                snackbar = SnackBar(
-                  content: Text('Participant can not be empty'),
-                  duration: const Duration(seconds: 1),
-                );
-
-                ScaffoldMessenger.of(context).showSnackBar(snackbar);
-                return;
-              }
-
-              if (avatar != null) {
-                avatarUrl = await qiscus
-                    .upload(avatar)
-                    .firstWhere((r) => r.data != null)
-                    .then((r) => r.data!);
-              }
-
-              snackbar = SnackBar(
-                content: Text('Creating room'),
-              );
-              ScaffoldMessenger.of(context).showSnackBar(snackbar);
-
-              var room = await qiscus.createGroupChat(
-                name: name,
-                userIds: userIds,
-                avatarUrl: avatarUrl,
-              );
-
-              ScaffoldMessenger.of(context).hideCurrentSnackBar();
-
-              context.pushReplacement(ChatPage(
-                qiscus: qiscus,
-                account: account,
-                room: room,
-              ));
-            },
-            style: TextButton.styleFrom(
-              textStyle: TextStyle(
-                color: Colors.white,
-              ),
+    return FutureBuilder(
+      future: _initializePage(context),
+      builder: (context, snapshot) {
+        return Scaffold(
+          key: scaffoldKey,
+          appBar: AppBar(
+            leading: IconButton(
+              onPressed: () {
+                context.pop();
+              },
+              icon: const Icon(Icons.arrow_back),
             ),
-            child: Text('Create'),
-          ),
-        ],
-      ),
-      body: Container(
-        height: double.infinity,
-        width: double.infinity,
-        child: Column(
-          children: <Widget>[
-            Padding(
-              padding: const EdgeInsets.all(10.0),
-              child: Row(
-                children: <Widget>[
-                  Container(
-                    height: 64,
-                    width: 64,
-                    child: GestureDetector(
-                      child: CircleAvatar(
-                        backgroundImage: this.selectedImage == null
-                            ? Image.asset(
-                                'assets/ic-default-avatar.png',
-                              ).image
-                            : Image.file(this.selectedImage!).image,
-                      ),
-                      onTap: () async {
-                        var file = await FilePicker.platform.getFile(
-                          type: FileType.image,
-                        );
-                        setState(() {
-                          this.selectedImage = file;
-                        });
-                      },
-                    ),
+            title: const Text('Create room'),
+            actions: <Widget>[
+              TextButton(
+                onPressed: () => _onCreateRoom(context),
+                style: TextButton.styleFrom(
+                  textStyle: const TextStyle(
+                    color: Colors.white,
                   ),
-                  Expanded(
-                    child: Padding(
-                      padding: const EdgeInsets.only(left: 8.0),
-                      child: Container(
+                ),
+                child: const Text('Create'),
+              ),
+            ],
+          ),
+          body: SizedBox(
+            height: double.infinity,
+            width: double.infinity,
+            child: Column(
+              children: <Widget>[
+                Padding(
+                  padding: const EdgeInsets.all(10.0),
+                  child: Row(
+                    children: <Widget>[
+                      SizedBox(
                         height: 64,
-                        child: TextField(
-                          controller: selectedNameController,
-                          decoration: InputDecoration(
-                            labelText: 'Room name',
+                        width: 64,
+                        child: GestureDetector(
+                          child: CircleAvatar(
+                            backgroundImage: selectedImage == null
+                                ? Image.asset(
+                                    'assets/ic-default-avatar.png',
+                                  ).image
+                                : Image.file(selectedImage!).image,
+                          ),
+                          onTap: () async {
+                            var file = await FilePicker.platform.getFile(
+                              type: FileType.image,
+                            );
+                            setState(() {
+                              selectedImage = file;
+                            });
+                          },
+                        ),
+                      ),
+                      Expanded(
+                        child: Padding(
+                          padding: const EdgeInsets.only(left: 8.0),
+                          child: SizedBox(
+                            height: 64,
+                            child: TextField(
+                              controller: selectedNameController,
+                              decoration: const InputDecoration(
+                                labelText: 'Room name',
+                              ),
+                            ),
                           ),
                         ),
                       ),
-                    ),
+                    ],
                   ),
-                ],
-              ),
-            ),
-            Expanded(
-              child: ListView.builder(
-                itemBuilder: (context, index) {
-                  var user = this.users[index];
-                  var selected = this.selectedUser.any((u) => u.id == user.id);
+                ),
+                Expanded(
+                  child: ListView.builder(
+                    itemBuilder: (context, index) {
+                      var user = users[index];
+                      var selected = selectedUser.any((u) => u.id == user.id);
 
-                  return ListTile(
-                    title: Text(user.name),
-                    subtitle: Text(user.id),
-                    leading: Avatar(url: user.avatarUrl!),
-                    trailing:
-                        selected ? Icon(Icons.check_circle_outline) : null,
-                    selected: selected,
-                    onTap: () {
-                      setState(() {
-                        if (this.selectedUser.contains(user)) {
-                          this.selectedUser.removeWhere((u) => u.id == user.id);
-                        } else {
-                          this.selectedUser.add(user);
-                        }
-                      });
+                      return ListTile(
+                        title: Text(user.name),
+                        subtitle: Text(user.id),
+                        leading: Avatar(url: user.avatarUrl!),
+                        trailing: selected
+                            ? const Icon(Icons.check_circle_outline)
+                            : null,
+                        selected: selected,
+                        onTap: () {
+                          setState(() {
+                            if (selectedUser.contains(user)) {
+                              selectedUser.removeWhere((u) => u.id == user.id);
+                            } else {
+                              selectedUser.add(user);
+                            }
+                          });
+                        },
+                      );
                     },
-                  );
-                },
-                itemCount: this.users.length,
-              ),
+                    itemCount: users.length,
+                  ),
+                ),
+              ],
             ),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
+  }
+
+  void _onCreateRoom(BuildContext context) async {
+    var name = selectedNameController.text;
+    var avatar = selectedImage;
+    var userIds = selectedUser.map((e) => e.id).toList();
+
+    var snackbar = const SnackBar(content: Text(''));
+
+    String? avatarUrl;
+
+    if (name.isEmpty) {
+      snackbar = const SnackBar(
+        content: Text('Room name cannot be empty'),
+        duration: Duration(seconds: 1),
+      );
+      ScaffoldMessenger.of(context).showSnackBar(snackbar);
+      return;
+    }
+    if (userIds.isEmpty) {
+      snackbar = const SnackBar(
+        content: Text('Participant can not be empty'),
+        duration: Duration(seconds: 1),
+      );
+
+      ScaffoldMessenger.of(context).showSnackBar(snackbar);
+      return;
+    }
+
+    if (avatar != null) {
+      avatarUrl = await context
+          .read<QiscusSDK>()
+          .upload(avatar)
+          .firstWhere((r) => r.data != null)
+          .then((r) => r.data!);
+    }
+
+    snackbar = const SnackBar(
+      content: Text('Creating room'),
+    );
+    ScaffoldMessenger.of(context).showSnackBar(snackbar);
+
+    var room = await context.read<QiscusUtil>().createGroupChat(
+          name: name,
+          userIds: userIds,
+          avatarUrl: avatarUrl,
+        );
+
+    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+
+    context.pushReplacement(ChatPage(chatRoomId: room.id));
   }
 }

@@ -1,12 +1,13 @@
 import 'dart:async';
-import 'dart:collection';
 
 import 'package:date_format/date_format.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:qiscus_chat_sdk/qiscus_chat_sdk.dart';
 
 import '../constants.dart';
 import '../extensions.dart';
+import '../qiscus_util.dart';
 import '../widget/avatar_widget.dart';
 import 'chat_page.dart';
 import 'login_page.dart';
@@ -14,16 +15,12 @@ import 'profile_page.dart';
 import 'user_list_page.dart';
 
 class RoomListPage extends StatefulWidget {
-  RoomListPage({
-    required this.qiscus,
-    required this.account,
+  const RoomListPage({
+    super.key,
   });
 
-  final QiscusSDK qiscus;
-  final QAccount account;
-
   @override
-  _RoomListPageState createState() => _RoomListPageState();
+  RoomListPageState createState() => RoomListPageState();
 }
 
 enum MenuItems {
@@ -31,76 +28,48 @@ enum MenuItems {
   logout,
 }
 
-class _RoomListPageState extends State<RoomListPage> {
-  late QAccount account = widget.account;
-  late QiscusSDK qiscus = widget.qiscus;
-  var rooms = HashMap<int, QChatRoom>();
-  late StreamSubscription<QMessage> _onMessageReceivedSubscription;
-  late StreamSubscription<int> _onChatRoomClearedSubscription;
-
-  late StreamSubscription<int> _roomClearedSubs =
-      qiscus.onChatRoomCleared().listen(_onRoomCleared);
-  late StreamSubscription<QMessage> _messageReceivedSubs =
-      qiscus.onMessageReceived().listen(_onMessageReceived);
+class RoomListPageState extends State<RoomListPage> {
+  Future<void> _initializePage(BuildContext context) async {
+    await context.read<QiscusUtil>().getAllChatRooms();
+  }
 
   @override
   void initState() {
     super.initState();
-    qiscus = widget.qiscus;
-    account = widget.account;
-
-    scheduleMicrotask(() async {
-      qiscus.getAllChatRooms().then((rooms) {
-        if (mounted) {
-          var entries = rooms.map((r) => MapEntry(r.id, r));
-          setState(() {
-            this.rooms.addEntries(entries);
-          });
-        }
-      });
-
-      // _onChatRoomClearedSubscription = qiscus
-      //     .onChatRoomCleared$()
-      //     .takeWhile((_) => this.mounted)
-      //     .listen(_onRoomCleared);
-
-      // _onMessageReceivedSubscription = qiscus
-      //     .onMessageReceived$()
-      //     .takeWhile((_) => this.mounted)
-      //     .listen(_onMessageReceived);
-    });
-  }
-
-  @override
-  void dispose() {
-    super.dispose();
-    _onMessageReceivedSubscription.cancel();
-    _onChatRoomClearedSubscription.cancel();
-    _roomClearedSubs.cancel();
-    _messageReceivedSubs.cancel();
+    _initializePage(context);
   }
 
   @override
   Widget build(BuildContext context) {
+    var account = context.watch<QAccount?>();
+    var rooms = context.select<QiscusUtil, List<QChatRoom>>((it) {
+      return it.rooms.toList().where((r) => r.lastMessage != null).toList()
+        ..sort((r1, r2) {
+          return r2.lastMessage!.timestamp.compareTo(r1.lastMessage!.timestamp);
+        });
+    });
+
     return Scaffold(
       appBar: AppBar(
         leading: Padding(
           padding: const EdgeInsets.all(10.0),
           child: Hero(
             tag: HeroTags.accountAvatar,
-            child: Avatar(url: account.avatarUrl!),
+            child: account == null
+                ? const CircularProgressIndicator()
+                : Avatar(url: account.avatarUrl!),
           ),
         ),
-        title: Text(account.name),
+        title: Text(account?.name ?? 'Loading...'),
         actions: <Widget>[
           PopupMenuButton<MenuItems>(
             itemBuilder: (context) {
               return [
-                PopupMenuItem(
+                const PopupMenuItem(
                   value: MenuItems.profile,
                   child: Text('Profile'),
                 ),
-                PopupMenuItem(
+                const PopupMenuItem(
                   value: MenuItems.logout,
                   child: Text('Logout'),
                 ),
@@ -110,50 +79,32 @@ class _RoomListPageState extends State<RoomListPage> {
               switch (item) {
                 case MenuItems.logout:
                   {
-                    await qiscus.clearUser();
-                    context.pushReplacement(LoginPage(
-                      qiscus: qiscus,
-                    ));
+                    context.read<QiscusUtil>().clearUser();
+                    context.pushReplacement(const LoginPage());
 
                     break;
                   }
 
                 case MenuItems.profile:
-                  QAccount? _account = await context.push(
-                    ProfilePage(
-                      qiscus: qiscus,
-                      account: account,
-                    ),
-                  );
-                  if (_account != null) {
-                    setState(() {
-                      this.account = _account;
-                    });
-                  }
+                  await context.push(const ProfilePage());
                   break;
               }
             },
           ),
         ],
       ),
-      body: Container(
-        child: RefreshIndicator(
-          onRefresh: () async {
-            var rooms = await qiscus.getAllChatRooms();
-            setState(() {
-              this.rooms.addEntries(rooms.map((r) => MapEntry(r.id, r)));
-            });
-          },
-          child: ListView.separated(
-            itemBuilder: (context, index) {
-              var rooms =
-                  this.rooms.values.where((r) => r.lastMessage != null).toList()
-                    ..sort((r1, r2) {
-                      return r2.lastMessage!.timestamp
-                          .compareTo(r1.lastMessage!.timestamp);
-                    });
-              var room = rooms.elementAt(index);
-              var lastMessage = _getLastMessage(room.lastMessage!);
+      body: RefreshIndicator(
+        onRefresh: () => context.read<QiscusUtil>().getAllChatRooms(),
+        child: ListView.separated(
+          itemBuilder: (context, index) {
+            var room = rooms.elementAt(index);
+
+            return Builder(builder: (context) {
+              var lastMessage = _getLastMessage(QiscusUtil.getLastMessageFor(
+                context,
+                chatRoomId: room.id,
+              ));
+
               return ListTile(
                 leading: Stack(
                   children: <Widget>[
@@ -168,7 +119,7 @@ class _RoomListPageState extends State<RoomListPage> {
                         child: Container(
                           width: 18,
                           height: 18,
-                          decoration: BoxDecoration(
+                          decoration: const BoxDecoration(
                             borderRadius: BorderRadius.all(Radius.circular(50)),
                             color: Colors.redAccent,
                             border: Border.fromBorderSide(BorderSide(
@@ -181,7 +132,7 @@ class _RoomListPageState extends State<RoomListPage> {
                               room.unreadCount > 9
                                   ? '9+'
                                   : room.unreadCount.toString(),
-                              style: TextStyle(
+                              style: const TextStyle(
                                 color: Colors.white,
                                 fontSize: 11,
                               ),
@@ -195,7 +146,7 @@ class _RoomListPageState extends State<RoomListPage> {
                 subtitle: room.type == QRoomType.single
                     ? Text(
                         lastMessage,
-                        style: TextStyle(
+                        style: const TextStyle(
                           fontStyle: FontStyle.italic,
                           fontSize: 12,
                         ),
@@ -207,7 +158,7 @@ class _RoomListPageState extends State<RoomListPage> {
                             flex: 0,
                             child: Text(
                               '${room.lastMessage!.sender.name}: ',
-                              style: TextStyle(
+                              style: const TextStyle(
                                 fontWeight: FontWeight.bold,
                                 fontSize: 12,
                               ),
@@ -217,7 +168,7 @@ class _RoomListPageState extends State<RoomListPage> {
                             flex: 2,
                             child: Text(
                               lastMessage,
-                              style: TextStyle(
+                              style: const TextStyle(
                                 fontStyle: FontStyle.italic,
                                 fontSize: 12,
                               ),
@@ -235,39 +186,23 @@ class _RoomListPageState extends State<RoomListPage> {
                       )
                     : Container(),
                 onTap: () async {
-                  QChatRoom? _room = await context.push(
-                    ChatPage(
-                      qiscus: qiscus,
-                      account: account,
-                      room: room,
-                    ),
-                  );
-                  if (_room != null) {
-                    setState(() {
-                      this.rooms.update(room.id, (r) {
-                        return _room;
-                      });
-                    });
-                  }
+                  context.push(ChatPage(chatRoomId: room.id));
                 },
               );
-            },
-            itemCount: this.rooms.length,
-            separatorBuilder: (context, index) {
-              return Divider(
-                color: Colors.black38,
-              );
-            },
-          ),
+            });
+          },
+          itemCount: rooms.length,
+          separatorBuilder: (context, index) {
+            return const Divider(
+              color: Colors.black38,
+            );
+          },
         ),
       ),
       floatingActionButton: FloatingActionButton(
-        child: Icon(Icons.search),
+        child: const Icon(Icons.search),
         onPressed: () {
-          context.push(UserListPage(
-            qiscus: qiscus,
-            account: account,
-          ));
+          context.push(const UserListPage());
         },
       ),
     );
@@ -277,34 +212,5 @@ class _RoomListPageState extends State<RoomListPage> {
     if (lastMessage == null) return 'No messages';
     if (lastMessage.text.contains('[file]')) return 'File attachment';
     return lastMessage.text;
-  }
-
-  void _onRoomCleared(int roomId) {
-    if (!this.mounted) return;
-    setState(() {
-      rooms.removeWhere((key, value) => key == roomId);
-    });
-  }
-
-  void _onMessageReceived(QMessage message) async {
-    if (!this.mounted) return;
-    var roomId = message.chatRoomId;
-    var hasRoom = this.rooms.containsKey(roomId);
-
-    QChatRoom? room;
-    if (!hasRoom) {
-      var rooms = await qiscus.getChatRooms(roomIds: [roomId]);
-      room = rooms.first;
-    }
-
-    setState(() {
-      this.rooms.update(roomId, (room) {
-        room.lastMessage = message;
-        room.unreadCount++;
-        return room;
-      }, ifAbsent: () {
-        return room!;
-      });
-    });
   }
 }

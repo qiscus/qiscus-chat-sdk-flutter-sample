@@ -7,6 +7,7 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_downloader/flutter_downloader.dart';
 import 'package:provider/provider.dart';
+import 'package:qiscus_chat_flutter_sample/qiscus_util.dart';
 import 'package:qiscus_chat_sdk/qiscus_chat_sdk.dart';
 
 import 'screen/login_page.dart';
@@ -37,18 +38,17 @@ class _MainAppState extends State<MainApp> {
     super.initState();
     qiscus.enableDebugMode(enable: false);
 
-    qiscus.onMessageReceived().listen((v) {
-      print('from sample, message received $v');
-    });
-
     _subs = Stream.periodic(
       const Duration(seconds: 3),
-      (_) => qiscus.isLogin && this.mounted,
+      (_) => qiscus.isLogin && mounted,
     ).where((it) => it).listen((_) {
       qiscus.publishOnlinePresence(isOnline: true);
     });
-    // FirebaseMessaging.onMessage.listen((message) {});
 
+    _setupDownloader();
+  }
+
+  void _setupDownloader() {
     _port.listen((dynamic data) {
       String taskId = data[0];
       DownloadTaskStatus status = data[1];
@@ -110,27 +110,37 @@ class _MainAppState extends State<MainApp> {
 
   Widget _child(BuildContext context, AsyncSnapshot snapshot) {
     if (snapshot.connectionState == ConnectionState.done) {
-      // if (snapshot.hasData) {
       return MultiProvider(
         providers: [
-          Provider<QiscusSDK>.value(value: qiscus),
+          // Provider<QiscusSDK>.value(value: qiscus),
+          qiscusProvider,
           Provider<FirebaseMessaging>.value(value: firebase),
-          ProxyProvider<QiscusSDK, QAccount?>(
-            create: (_) => qiscus.currentUser,
-            update: (_, qiscus, account) => qiscus.currentUser,
-          ),
+          qiscusUtilProvider,
+          qiscusAccountProvider,
         ],
-        child: MaterialApp(
-          home: LoginPage(qiscus: qiscus),
-          // theme: ThemeData.dark(),
+        child: const MaterialApp(
+          home: LoginPage(),
           debugShowCheckedModeBanner: false,
         ),
       );
     } else {
-      return CircularProgressIndicator();
+      return const CircularProgressIndicator();
     }
   }
 }
+
+final qiscusProvider = Provider<QiscusSDK>(
+  create: (_) => QiscusSDK(),
+);
+final qiscusAccountProvider = ProxyProvider<QiscusUtil, QAccount?>(
+  update: (context, QiscusUtil qiscus, QAccount? user) {
+    return user ?? qiscus.account;
+  },
+);
+final qiscusUtilProvider = ChangeNotifierProxyProvider<QiscusSDK, QiscusUtil>(
+  create: (context) => QiscusUtil(context.read<QiscusSDK>()),
+  update: (context, qiscus, util) => QiscusUtil.update(qiscus, util),
+);
 
 Future<void> _onBackgroundMessage(RemoteMessage message) async {
   print('@bg-message');

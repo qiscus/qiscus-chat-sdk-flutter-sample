@@ -20,6 +20,7 @@ dependencies:
   permission_handler: ^10.0.1
   path_provider: ^2.0.11
   firebase_core: ^1.23.0
+  uuid: ^3.0.7
 
 dev_dependencies:
   flutter_test:
@@ -28,6 +29,7 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
-# dependency_overrides:
-#   qiscus_chat_sdk:
-#     path: ../qiscus-chat-sdk-flutter
+
+dependency_overrides:
+  qiscus_chat_sdk:
+    path: ../qiscus-chat-sdk-flutter

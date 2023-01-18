@@ -8,7 +8,8 @@ import 'package:qiscus_chat_sdk/qiscus_chat_sdk.dart';
 import '../widget/avatar_widget.dart';
 
 class ChatBubble extends StatelessWidget {
-  ChatBubble({
+  const ChatBubble({
+    super.key,
     required this.message,
     this.onPress,
     this.flipped = false,
@@ -42,7 +43,7 @@ class ChatBubble extends StatelessWidget {
                 Stack(
                   children: <Widget>[
                     GestureDetector(
-                      onLongPress: () => this.onPress?.call(),
+                      onLongPress: () => onPress?.call(),
                       child: Container(
                         width: 200,
                         alignment: flipped
@@ -68,7 +69,7 @@ class ChatBubble extends StatelessWidget {
   }
 
   BoxDecoration _containerDecoration() {
-    return BoxDecoration(
+    return const BoxDecoration(
       color: Colors.black12,
       border: Border.fromBorderSide(BorderSide(
         color: Colors.black12,
@@ -88,7 +89,7 @@ class ChatBubble extends StatelessWidget {
         left: flipped ? 0 : null,
         child: Text(
           message.timestamp.millisecondsSinceEpoch.toString(),
-          style: TextStyle(
+          style: const TextStyle(
             fontSize: 8,
           ),
         ),
@@ -102,7 +103,7 @@ class ChatBubble extends StatelessWidget {
                 message.timestamp,
                 [HH, ':', mm],
               ),
-              style: TextStyle(
+              style: const TextStyle(
                 fontSize: 12,
               )),
         ),
@@ -115,7 +116,7 @@ class ChatBubble extends StatelessWidget {
                 message.timestamp,
                 [HH, ':', mm],
               ),
-              style: TextStyle(
+              style: const TextStyle(
                 fontSize: 12,
               )),
         ),
@@ -125,7 +126,7 @@ class ChatBubble extends StatelessWidget {
   Text _buildSender(QUser sender) {
     return Text(
       sender.name,
-      style: TextStyle(
+      style: const TextStyle(
         fontSize: 12,
       ),
     );
@@ -142,61 +143,57 @@ class ChatBubble extends StatelessWidget {
     progress = progress / 100;
 
     if (message.type == QMessageType.attachment && isImage) {
-      return Container(
-        child: Stack(
-          alignment: Alignment.bottomCenter,
-          children: [
-            if (message.payload?['progress'] != null) ...[
-              // Image.file(File(message.payload['url'])),
-              LinearProgressIndicator(value: progress),
-            ],
-            if ((message.payload?['url'] as String).startsWith('http'))
-              Image.network(message.payload?['url']),
-            Positioned(
-              bottom: 0,
-              left: 0,
-              child: TextButton(
-                onPressed: () => _download(),
-                style: TextButton.styleFrom(
-                  shape: CircleBorder(),
-                  minimumSize: Size.fromWidth(14),
-                  primary: Colors.white.withAlpha(0x55),
-                ),
-                child: Icon(Icons.file_download, size: 18),
-              ),
-            ),
+      return Stack(
+        alignment: Alignment.bottomCenter,
+        children: [
+          if (message.payload?['progress'] != null) ...[
+            // Image.file(File(message.payload['url'])),
+            LinearProgressIndicator(value: progress),
           ],
-        ),
+          if ((message.payload?['url'] as String).startsWith('http'))
+            Image.network(message.payload?['url']),
+          Positioned(
+            bottom: 0,
+            left: 0,
+            child: TextButton(
+              onPressed: () => _download(),
+              style: TextButton.styleFrom(
+                shape: const CircleBorder(),
+                minimumSize: const Size.fromWidth(14),
+                primary: Colors.white.withAlpha(0x55),
+              ),
+              child: const Icon(Icons.file_download, size: 18),
+            ),
+          ),
+        ],
       );
     }
     if (message.type == QMessageType.attachment && !isImage) {
-      return Container(
-        child: Stack(
-          alignment: Alignment.bottomCenter,
-          children: [
-            if (message.payload?['progress'] != null) ...[
-              // Image.file(File(message.payload['url'])),
-              LinearProgressIndicator(value: progress),
-            ],
-            Container(
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(3.0),
-              ),
-              child: Row(
-                children: [
-                  TextButton(
-                    onPressed: _download,
-                    child: Icon(Icons.file_download, size: 20),
-                  ),
-                  Text(message.payload?['file_name']),
-                ],
-              ),
-            ),
-            if ((message.payload?['caption'] as String).isNotEmpty)
-              Text(message.payload?['caption']),
+      return Stack(
+        alignment: Alignment.bottomCenter,
+        children: [
+          if (message.payload?['progress'] != null) ...[
+            // Image.file(File(message.payload['url'])),
+            LinearProgressIndicator(value: progress),
           ],
-        ),
+          Container(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(3.0),
+            ),
+            child: Row(
+              children: [
+                TextButton(
+                  onPressed: _download,
+                  child: const Icon(Icons.file_download, size: 20),
+                ),
+                Text(message.payload?['file_name']),
+              ],
+            ),
+          ),
+          if ((message.payload?['caption'] as String).isNotEmpty)
+            Text(message.payload?['caption']),
+        ],
       );
     }
     return Text(message.text);
@@ -207,24 +204,22 @@ class ChatBubble extends StatelessWidget {
     if (status == PermissionStatus.granted) {
       // var folder = await path.getExternalStorageDirectory();
       var folder = await path.getApplicationDocumentsDirectory();
-      if (folder != null) {
-        var downloadFolder = folder.path;
-        var r = await FlutterDownloader.enqueue(
-          url: message.payload?['url'],
-          savedDir: downloadFolder,
-          showNotification: true,
-          openFileFromNotification: true,
-          fileName: message.payload?['file_name'],
-        );
-        if (r != null) {
-          print('download: $r');
-        }
+      var downloadFolder = folder.path;
+      var r = await FlutterDownloader.enqueue(
+        url: message.payload?['url'],
+        savedDir: downloadFolder,
+        showNotification: true,
+        openFileFromNotification: true,
+        fileName: message.payload?['file_name'],
+      );
+      if (r != null) {
+        print('download: $r');
       }
     }
   }
 
   List<Widget> _buildStatus() {
-    if (flipped)
+    if (flipped) {
       return [
         Positioned(
           top: 0,
@@ -239,7 +234,8 @@ class ChatBubble extends StatelessWidget {
           ),
         )
       ];
-    else
+    } else {
       return [];
+    }
   }
 }
