@@ -301,18 +301,26 @@ class ChatPageState extends State<ChatPage> {
   void _onUpload(BuildContext context) async {
     var sdk = context.read<QiscusSDK>();
     var qiscus = context.read<QiscusUtil>();
+    var scaffold = ScaffoldMessenger.of(context);
 
-    var file = await FilePicker.platform.getFile(type: FileType.image);
-    if (file != null) {
-      var message = sdk.generateFileAttachmentMessage(
-        chatRoomId: chatRoomId,
-        caption: file.path.split('/').last,
-        url: file.uri.toString(),
-        text: 'Image attachment',
-        size: await file.length(),
-      );
+    try {
+      var file = await FilePicker.platform.getFile(type: FileType.image);
+      if (file != null) {
+        var message = sdk.generateFileAttachmentMessage(
+          chatRoomId: chatRoomId,
+          caption: file.path.split('/').last,
+          url: file.uri.toString(),
+          text: 'Image attachment',
+          size: await file.length(),
+        );
 
-      await qiscus.uploadMessage(message: message, file: file);
+        await qiscus.uploadMessage(message: message, file: file);
+      }
+    } catch (err) {
+      print(err.toString());
+      scaffold.showSnackBar(SnackBar(
+        content: Text("Error while reading files: ${err.runtimeType}"),
+      ));
     }
   }
 
