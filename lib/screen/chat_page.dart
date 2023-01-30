@@ -291,9 +291,12 @@ class ChatPageState extends State<ChatPage> {
 
   void _publishTyping(BuildContext context) {
     var qiscus = context.read<QiscusSDK>();
+    Timer? timer;
+
+    if (timer != null && timer.isActive == true) timer.cancel();
 
     qiscus.publishTyping(roomId: chatRoomId, isTyping: true);
-    Timer(const Duration(seconds: 1), () {
+    timer = Timer(const Duration(seconds: 1), () {
       qiscus.publishTyping(roomId: chatRoomId, isTyping: false);
     });
   }
