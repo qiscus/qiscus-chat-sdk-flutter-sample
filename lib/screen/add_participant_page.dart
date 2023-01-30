@@ -81,6 +81,7 @@ class AddParticipantPageState extends State<AddParticipantPage> {
   }
 
   List<Widget> _buildActions(QiscusUtil qiscus, BuildContext context) {
+    var navigator = Navigator.of(context);
     return <Widget>[
       TextButton(
         onPressed: () async {
@@ -90,8 +91,7 @@ class AddParticipantPageState extends State<AddParticipantPage> {
             userIds: userIds,
           );
 
-          Navigator.maybePop(context).ignore();
-          // context.pop(this.room);
+          navigator.maybePop().ignore();
         },
         style: TextButton.styleFrom(
           foregroundColor: Colors.white,

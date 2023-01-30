@@ -28,8 +28,8 @@ extension BuildContextX on BuildContext {
 }
 
 extension FilePickerX on FilePicker {
-  Future<File?> getFile({type: FileType}) async {
-    var result = await this.pickFiles(type: type);
+  Future<File?> getFile({FileType type = FileType.image}) async {
+    var result = await pickFiles(type: type);
     if (result?.files.first != null) {
       return File(result!.files.first.path!);
     }

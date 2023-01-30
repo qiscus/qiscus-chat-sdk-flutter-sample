@@ -145,6 +145,10 @@ class CreateRoomPageState extends State<CreateRoomPage> {
   }
 
   void _onCreateRoom(BuildContext context) async {
+    var scaffold = ScaffoldMessenger.of(context);
+    var navigator = Navigator.of(context);
+    var qiscus = context.read<QiscusUtil>();
+
     var name = selectedNameController.text;
     var avatar = selectedImage;
     var userIds = selectedUser.map((e) => e.id).toList();
@@ -182,16 +186,18 @@ class CreateRoomPageState extends State<CreateRoomPage> {
     snackbar = const SnackBar(
       content: Text('Creating room'),
     );
-    ScaffoldMessenger.of(context).showSnackBar(snackbar);
+    scaffold.showSnackBar(snackbar);
 
-    var room = await context.read<QiscusUtil>().createGroupChat(
-          name: name,
-          userIds: userIds,
-          avatarUrl: avatarUrl,
-        );
+    var room = await qiscus.createGroupChat(
+      name: name,
+      userIds: userIds,
+      avatarUrl: avatarUrl,
+    );
 
-    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+    scaffold.hideCurrentSnackBar();
 
-    context.pushReplacement(ChatPage(chatRoomId: room.id));
+    navigator.pushReplacement(
+      MaterialPageRoute(builder: (context) => ChatPage(chatRoomId: room.id)),
+    );
   }
 }
