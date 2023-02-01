@@ -51,8 +51,12 @@ class ChatPageState extends State<ChatPage> {
 
   @override
   void initState() {
+    scheduleMicrotask(() {
+      print('Get initial page content');
+      _initializePage(context);
+    });
+
     super.initState();
-    _initializePage(context);
   }
 
   @override
@@ -321,7 +325,7 @@ class ChatPageState extends State<ChatPage> {
         await qiscus.uploadMessage(message: message, file: file);
       }
     } catch (err) {
-      print(err.toString());
+      context.debugLog(err.toString());
       scaffold.showSnackBar(SnackBar(
         content: Text("Error while reading files: ${err.runtimeType}"),
       ));

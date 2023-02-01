@@ -9,6 +9,7 @@ import 'package:flutter_downloader/flutter_downloader.dart';
 import 'package:provider/provider.dart';
 import 'package:qiscus_chat_flutter_sample/qiscus_util.dart';
 import 'package:qiscus_chat_sdk/qiscus_chat_sdk.dart';
+import 'package:logger/logger.dart';
 
 import 'screen/login_page.dart';
 
@@ -24,10 +25,10 @@ class MainApp extends StatefulWidget {
   const MainApp({Key? key}) : super(key: key);
 
   @override
-  _MainAppState createState() => _MainAppState();
+  MainAppState createState() => MainAppState();
 }
 
-class _MainAppState extends State<MainApp> {
+class MainAppState extends State<MainApp> {
   final qiscus = QiscusSDK();
   final firebase = FirebaseMessaging.instance;
   StreamSubscription<bool>? _subs;
@@ -54,7 +55,7 @@ class _MainAppState extends State<MainApp> {
       DownloadTaskStatus status = data[1];
       int progress = data[2];
 
-      print('@LISTEN taskId($taskId) progress($progress) status($status)');
+      logger.d('@LISTEN taskId($taskId) progress($progress) status($status)');
       if (progress == 100 && status == DownloadTaskStatus.complete) {
         FlutterDownloader.open(taskId: taskId);
       }
@@ -69,12 +70,12 @@ class _MainAppState extends State<MainApp> {
   static void downloadCallback(
       String taskId, DownloadTaskStatus status, int progress) {
     var send = IsolateNameServer.lookupPortByName('downloader_send_port');
-    print('@CB taskId($taskId) progress($progress) status($status)');
+    logger.d('@CB taskId($taskId) progress($progress) status($status)');
 
     if (send != null) {
       send.send([taskId, status, progress]);
     } else {
-      print('`send` are null');
+      logger.d('`send` are null');
     }
   }
 
@@ -90,10 +91,10 @@ class _MainAppState extends State<MainApp> {
     await Firebase.initializeApp();
     FirebaseMessaging.onMessage.listen((message) {
       var data = message.data;
-      print('@got-fcm-message');
-      print('title: ${message.notification?.title}');
-      print('body: ${message.notification?.body}');
-      print('data: $data');
+      logger.d('@got-fcm-message');
+      logger.d('title: ${message.notification?.title}');
+      logger.d('body: ${message.notification?.body}');
+      logger.d('data: $data');
     });
   }
 
@@ -112,7 +113,7 @@ class _MainAppState extends State<MainApp> {
     if (snapshot.connectionState == ConnectionState.done) {
       return MultiProvider(
         providers: [
-          // Provider<QiscusSDK>.value(value: qiscus),
+          Provider<Logger>.value(value: logger),
           qiscusProvider,
           Provider<FirebaseMessaging>.value(value: firebase),
           qiscusUtilProvider,
@@ -129,6 +130,8 @@ class _MainAppState extends State<MainApp> {
   }
 }
 
+final logger = Logger();
+
 final qiscusProvider = Provider<QiscusSDK>(
   create: (_) => QiscusSDK(),
 );
@@ -138,12 +141,20 @@ final qiscusAccountProvider = ProxyProvider<QiscusUtil, QAccount?>(
   },
 );
 final qiscusUtilProvider = ChangeNotifierProxyProvider<QiscusSDK, QiscusUtil>(
-  create: (context) => QiscusUtil(context.read<QiscusSDK>()),
-  update: (context, qiscus, util) => QiscusUtil.update(qiscus, util),
+  create: (context) => QiscusUtil(
+    context.read<QiscusSDK>(),
+    logger: context.read<Logger>(),
+  ),
+  update: (context, qiscus, util) => QiscusUtil.update(
+    qiscus,
+    dis: util,
+    logger: context.read<Logger>(),
+  ),
 );
 
+// ignore: unused_element
 Future<void> _onBackgroundMessage(RemoteMessage message) async {
-  print('@bg-message');
-  print('title: ${message.notification?.title}');
-  print('body: ${message.notification?.body}');
+  logger.d('@bg-message');
+  logger.d('title: ${message.notification?.title}');
+  logger.d('body: ${message.notification?.body}');
 }

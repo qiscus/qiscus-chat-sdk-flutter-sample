@@ -198,6 +198,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.0.1"
+  flutter_logger:
+    dependency: "direct main"
+    description:
+      name: flutter_logger
+      sha256: "74de4b5429cf07efdb1e09413192339e700266765bd1bf20ea67b2e71ed31d02"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.0.6"
   flutter_plugin_android_lifecycle:
     dependency: transitive
     description:
@@ -280,6 +288,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.0.1"
+  logger:
+    dependency: "direct main"
+    description:
+      name: logger
+      sha256: "5076f09225f91dc49289a4ccb92df2eeea9ea01cf7c26d49b3a1f04c6a49eec1"
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.1.0"
   matcher:
     dependency: transitive
     description:
@@ -459,10 +475,11 @@ packages:
   qiscus_chat_sdk:
     dependency: "direct main"
     description:
-      path: "../../qiscus/qiscus-chat-sdk-flutter"
-      relative: true
-    source: path
-    version: "2.0.2"
+      name: qiscus_chat_sdk
+      sha256: "1d98976c128768c350d68f78aaa8921fc2208ac3956efd47d692830a036519d6"
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.0.3"
   riverpod:
     dependency: transitive
     description:
@@ -589,5 +606,5 @@ packages:
     source: hosted
     version: "0.2.0+3"
 sdks:
-  dart: ">=2.18.0 <4.0.0"
+  dart: ">=2.18.0 <3.0.0"
   flutter: ">=3.0.0"

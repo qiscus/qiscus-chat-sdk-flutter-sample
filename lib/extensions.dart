@@ -2,8 +2,14 @@ import 'dart:io';
 
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:logger/logger.dart';
+import 'package:provider/provider.dart';
 
 extension BuildContextX on BuildContext {
+  void debugLog(dynamic arg, [dynamic error, StackTrace? stackTrace]) {
+    read<Logger>().d(arg, error, stackTrace);
+  }
+
   void pop<T extends Object>([T? result]) {
     Navigator.pop(this, result);
   }

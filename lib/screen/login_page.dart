@@ -142,7 +142,7 @@ class LoginPageState extends State<LoginPage> {
                                 qiscus.subscribe();
 
                                 final token = await firebase.getToken();
-                                print('device token: $token');
+                                context.debugLog('device token: $token');
                                 if (token != null) {
                                   await qiscus.registerDeviceToken(
                                       token: token);

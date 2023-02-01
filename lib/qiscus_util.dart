@@ -2,13 +2,19 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/widgets.dart';
+import 'package:logger/logger.dart';
 import 'package:provider/provider.dart';
 import 'package:qiscus_chat_sdk/qiscus_chat_sdk.dart';
 
 class QiscusUtil extends ChangeNotifier implements ReassembleHandler {
-  QiscusUtil(this.qiscus);
-  factory QiscusUtil.update(QiscusSDK qiscus, [QiscusUtil? dis]) {
-    var it = QiscusUtil(qiscus);
+  QiscusUtil(this.qiscus, {required this.logger});
+
+  factory QiscusUtil.update(
+    QiscusSDK qiscus, {
+    required Logger logger,
+    QiscusUtil? dis,
+  }) {
+    var it = QiscusUtil(qiscus, logger: logger);
     if (dis != null) {
       it.messages = dis.messages;
       it.rooms = dis.rooms;
@@ -22,6 +28,7 @@ class QiscusUtil extends ChangeNotifier implements ReassembleHandler {
     return it;
   }
   final QiscusSDK qiscus;
+  final Logger logger;
 
   Set<QMessage> messages = {};
   Set<QChatRoom> rooms = {};
@@ -57,7 +64,7 @@ class QiscusUtil extends ChangeNotifier implements ReassembleHandler {
       avatarUrl: avatarUrl,
     );
     this.account = account;
-    print('logged in as $account');
+    logger.d('logged in as $account');
     notifyListeners();
 
     return account;
@@ -72,10 +79,8 @@ class QiscusUtil extends ChangeNotifier implements ReassembleHandler {
   }
 
   Future<List<QChatRoom>> getAllChatRooms() async {
-    print('get all rooms');
-    var rooms = await qiscus.getAllChatRooms();
+    var rooms = await qiscus.getAllChatRooms(showParticipant: true);
     this.rooms.addAll(rooms);
-    print('got ${rooms.length} rooms');
     notifyListeners();
 
     return rooms;
@@ -120,6 +125,9 @@ class QiscusUtil extends ChangeNotifier implements ReassembleHandler {
       return room;
     } on StateError {
       var data = await qiscus.getChatRoomWithMessages(roomId: roomId);
+      var rooms =
+          await qiscus.getChatRooms(roomIds: [roomId], showParticipants: true);
+      var room = rooms.firstWhere((r) => r.id == roomId);
 
       rooms.add(data.room);
       messages.addAll(data.messages);
@@ -268,7 +276,7 @@ class QiscusUtil extends ChangeNotifier implements ReassembleHandler {
   }
 
   void _mDelivered(QMessage message) {
-    print('@m.delivered message($message)');
+    logger.d('@m.delivered message($message)');
     var m = messages.firstWhere((m) => m.uniqueId == message.uniqueId);
     if (m.status != QMessageStatus.read) {
       m.status = QMessageStatus.delivered;
@@ -279,7 +287,7 @@ class QiscusUtil extends ChangeNotifier implements ReassembleHandler {
   }
 
   void _mRead(QMessage message) {
-    print('@m.read message($message)');
+    logger.d('@m.read message($message)');
     var m = messages.firstWhere((m) => m.uniqueId == message.uniqueId);
     m.status = QMessageStatus.read;
 
@@ -359,7 +367,7 @@ class QiscusUtil extends ChangeNotifier implements ReassembleHandler {
     var stream = qiscus.upload(file);
     stream.listen((progress) {
       var url = progress.data;
-      print('@upload: progress(${progress.progress}), url($url)');
+      logger.d('@upload: progress(${progress.progress}), url($url)');
 
       message.payload?['progress'] = progress.progress;
       messages.add(message);
@@ -459,7 +467,7 @@ class QiscusUtil extends ChangeNotifier implements ReassembleHandler {
 
   @override
   void reassemble() {
-    print('re-assemble this things');
+    logger.d('re-assemble this things');
   }
 
   void subscribePresence(QChatRoom room) {
