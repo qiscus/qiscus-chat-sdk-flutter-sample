@@ -46,6 +46,7 @@ class ChatPageState extends State<ChatPage> {
     await qiscus.getInitialMessages(room);
 
     qiscus.subscribeRoom(room);
+    qiscus.subscribePresence(room);
   }
 
   @override

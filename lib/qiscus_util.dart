@@ -461,4 +461,15 @@ class QiscusUtil extends ChangeNotifier implements ReassembleHandler {
   void reassemble() {
     print('re-assemble this things');
   }
+
+  void subscribePresence(QChatRoom room) {
+    if (room.type != QRoomType.single && room.participants.isEmpty) return;
+
+    try {
+      var userId = room.participants.firstWhere((u) => u.id != account?.id);
+      qiscus.subscribeUserOnlinePresence(userId.id);
+    } catch (er) {
+      logger.e('Could not subscribe user presence for room(${room.id})', er);
+    }
+  }
 }
