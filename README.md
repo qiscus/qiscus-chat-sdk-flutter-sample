@@ -12,6 +12,9 @@ After that if you dont have any issue regarding the flutter, then you can run th
 
 `flutter run`
 
+Important Notes :
+Before running apps please follow some [Prerequisites](https://firebase.google.com/docs/flutter/setup?platform=ios#prerequisites) related to adding firebase to our flutter project
+
 ## Screen shots
 
 You can see sample UI in this repository
