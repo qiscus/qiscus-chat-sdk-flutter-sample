@@ -16,6 +16,16 @@ if (flutterVersionCode == null) {
     flutterVersionCode = '1'
 }
 
+def flutterMinSdkVersion = localProperties.getProperty('flutter.minSdkVersion')
+if (flutterMinSdkVersion == null) {
+    flutterMinSdkVersion = '19'
+}
+
+def flutterTargetSdkVersion = localProperties.getProperty('flutter.targetSdkVersion')
+if (flutterTargetSdkVersion == null) {
+    flutterTargetSdkVersion = '30'
+}
+
 def flutterVersionName = localProperties.getProperty('flutter.versionName')
 if (flutterVersionName == null) {
     flutterVersionName = '1.0'
@@ -47,8 +57,8 @@ android {
         applicationId "com.example.qiscus_chat_flutter_sample"
         // You can update the following values to match your application needs.
         // For more information, see: https://docs.flutter.dev/deployment/android#reviewing-the-build-configuration.
-        minSdkVersion flutter.minSdkVersion
-        targetSdkVersion flutter.targetSdkVersion
+        minSdkVersion flutterMinSdkVersion.toInteger()
+        targetSdkVersion flutterTargetSdkVersion.toInteger()
         versionCode flutterVersionCode.toInteger()
         versionName flutterVersionName
     }
