@@ -8,6 +8,8 @@ Make sure your environment match with the flutter requirement, you can check by 
 
 `flutter doctor`
 
+Before running apps please follow some [Prerequisites](https://firebase.google.com/docs/flutter/setup?platform=android) related to adding firebase to our flutter project
+
 After that if you dont have any issue regarding the flutter, then you can run this sample by using this following code:
 
 `flutter run`

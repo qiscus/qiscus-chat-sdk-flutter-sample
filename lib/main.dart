@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 import 'dart:isolate';
 import 'dart:ui';
 
@@ -10,12 +11,20 @@ import 'package:provider/provider.dart';
 import 'package:qiscus_chat_flutter_sample/qiscus_util.dart';
 import 'package:qiscus_chat_sdk/qiscus_chat_sdk.dart';
 import 'package:logger/logger.dart';
+//generated after running flutterfire configure
+import 'firebase_options.dart';
 
 import 'screen/login_page.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp();
+  if (Platform.isAndroid) {
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
+  } else if (Platform.isIOS) {
+    await Firebase.initializeApp();
+  }
   // FirebaseMessaging.onBackgroundMessage(_onBackgroundMessage);
   await FlutterDownloader.initialize();
   runApp(const MainApp());
