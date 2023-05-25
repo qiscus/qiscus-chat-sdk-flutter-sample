@@ -139,8 +139,8 @@ class ChatBubble extends StatelessWidget {
 
     String? url = message.payload?['url'].toString();
     var isImage = url?.contains(RegExp(r'(jpe?g|png|gif)$')) ?? false;
-    var progress = message.payload?['progress'] as num;
-    progress = progress / 100;
+    var progress = (message.payload?['progress'] ?? 0.0) as num?;
+    progress = (progress! / 100);
 
     if (message.type == QMessageType.attachment && isImage) {
       return Stack(
