@@ -160,7 +160,7 @@ class ChatBubble extends StatelessWidget {
               style: TextButton.styleFrom(
                 shape: const CircleBorder(),
                 minimumSize: const Size.fromWidth(14),
-                primary: Colors.white.withAlpha(0x55),
+                foregroundColor: Colors.white.withAlpha(0x55),
               ),
               child: const Icon(Icons.file_download, size: 18),
             ),
