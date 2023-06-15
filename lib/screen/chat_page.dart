@@ -40,19 +40,29 @@ class ChatPageState extends State<ChatPage> {
   QChatRoom? room;
   QiscusUtil? qiscus;
 
+  late StreamSubscription _messageReceivedSubscription;
+  late StreamSubscription _roomClearedSubscription;
+
   Future<void> _initializePage(BuildContext context) async {
     var qiscus = context.read<QiscusUtil>();
     var room = await qiscus.getRoomWithId(chatRoomId);
     await qiscus.getInitialMessages(room);
 
-    qiscus.subscribeRoom(room);
-    qiscus.subscribePresence(room);
+    // qiscus.subscribeRoom(room);
+    // qiscus.subscribePresence(room);
+
+    _messageReceivedSubscription =
+        qiscus.qiscus.onMessageReceived().listen((_) {
+      debugPrint('@chat-page-state.on-message-received');
+    });
+    _roomClearedSubscription = qiscus.qiscus.onChatRoomCleared().listen((_) {
+      debugPrint('@chat-page-state.on-chat-room-cleared');
+    });
   }
 
   @override
   void initState() {
     scheduleMicrotask(() {
-      print('Get initial page content');
       _initializePage(context);
     });
 
@@ -79,132 +89,143 @@ class ChatPageState extends State<ChatPage> {
     var presence = QiscusUtil.getPresenceForRoomId(context, chatRoomId);
     var typing = QiscusUtil.getTypingForRoomId(context, chatRoomId);
 
-    return Scaffold(
-      appBar: AppBar(
-        leading: IconButton(
-          onPressed: () => context.pop(),
-          icon: const Icon(Icons.arrow_back),
+    return WillPopScope(
+      onWillPop: () async {
+        // _messageReceivedSubscription.cancel();
+        // _roomClearedSubscription.cancel();
+
+        return true;
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          leading: IconButton(
+            onPressed: () => context.pop(),
+            icon: const Icon(Icons.arrow_back),
+          ),
+          title: Row(
+            children: <Widget>[
+              Expanded(
+                flex: 0,
+                child: Hero(
+                  tag: HeroTags.roomAvatar(roomId: chatRoomId),
+                  child: Avatar(url: room.avatarUrl!),
+                ),
+              ),
+              _buildTitle(room, typing, presence, context),
+            ],
+          ),
+          actions: _buildActions(context, room),
         ),
-        title: Row(
+        body: Column(
           children: <Widget>[
             Expanded(
-              flex: 0,
-              child: Hero(
-                tag: HeroTags.roomAvatar(roomId: chatRoomId),
-                child: Avatar(url: room.avatarUrl!),
-              ),
-            ),
-            _buildTitle(room, typing, presence, context),
-          ],
-        ),
-        actions: _buildActions(context, room),
-      ),
-      body: Column(
-        children: <Widget>[
-          Expanded(
-            child: GroupedListView<QMessage, String>(
-              sort: false,
-              controller: scrollController,
-              elements: messages,
-              groupBy: (QMessage message) {
-                return formatDate(message.timestamp, [dd, ' ', MM, ' ', yyyy]);
-              },
-              groupSeparatorBuilder: (message) {
-                return Center(
-                  child: Container(
-                    width: 150,
-                    height: 25,
-                    decoration: const BoxDecoration(
-                      border: Border.fromBorderSide(BorderSide(
-                        color: Colors.black12,
-                        width: 1.0,
-                      )),
-                      borderRadius: BorderRadius.all(Radius.elliptical(5, 1)),
-                      color: Colors.white,
-                    ),
-                    child: Center(child: Text(message)),
-                  ),
-                );
-              },
-              itemBuilder: (context, message) {
-                final sender = message.sender;
-                return ChatBubble(
-                  message: message,
-                  flipped: sender.id == account?.id,
-                  onPress: () {
-                    showModalBottomSheet(
-                      context: context,
-                      builder: (BuildContext context) {
-                        return TextButton(
-                          child: const Text('Delete message'),
-                          onPressed: () {
-                            qiscus.deleteMessages(
-                              messageUniqueIds: [message.uniqueId],
-                            ).then((_) => Navigator.pop(context));
-                          },
-                        );
-                      },
-                    );
-                  },
-                );
-              },
-            ),
-          ),
-          SafeArea(
-            child: Row(
-              children: <Widget>[
-                IconButton(
-                  onPressed: () => _onUpload(context),
-                  icon: const Icon(Icons.attach_file),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.emoji_emotions),
-                  onPressed: () {
-                    setState(() {
-                      isEmojiPickerExpanded = !isEmojiPickerExpanded;
-                    });
-                  },
-                ),
-                Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.all(8.0),
+              child: GroupedListView<QMessage, String>(
+                sort: false,
+                controller: scrollController,
+                elements: messages,
+                groupBy: (QMessage message) {
+                  return formatDate(
+                      message.timestamp, [dd, ' ', MM, ' ', yyyy]);
+                },
+                groupSeparatorBuilder: (message) {
+                  return Center(
                     child: Container(
+                      width: 150,
+                      height: 25,
                       decoration: const BoxDecoration(
                         border: Border.fromBorderSide(BorderSide(
-                          width: 1,
                           color: Colors.black12,
+                          width: 1.0,
                         )),
+                        borderRadius: BorderRadius.all(Radius.elliptical(5, 1)),
+                        color: Colors.white,
                       ),
-                      child: TextField(
-                        controller: messageInputController,
-                        keyboardType: TextInputType.text,
-                        textInputAction: TextInputAction.send,
-                        onChanged: (_) => _publishTyping(context),
-                        onSubmitted: (_) => _sendMessage(context),
+                      child: Center(child: Text(message)),
+                    ),
+                  );
+                },
+                itemBuilder: (context, message) {
+                  final sender = message.sender;
+                  return ChatBubble(
+                    message: message,
+                    flipped: sender.id == account?.id,
+                    onPress: () {
+                      showModalBottomSheet(
+                        context: context,
+                        builder: (BuildContext context) {
+                          return SafeArea(
+                            child: TextButton(
+                              child: const Text('Delete message'),
+                              onPressed: () {
+                                qiscus.deleteMessages(
+                                  messageUniqueIds: [message.uniqueId],
+                                ).then((_) => Navigator.pop(context));
+                              },
+                            ),
+                          );
+                        },
+                      );
+                    },
+                  );
+                },
+              ),
+            ),
+            SafeArea(
+              child: Row(
+                children: <Widget>[
+                  IconButton(
+                    onPressed: () => _onUpload(context),
+                    icon: const Icon(Icons.attach_file),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.emoji_emotions),
+                    onPressed: () {
+                      setState(() {
+                        isEmojiPickerExpanded = !isEmojiPickerExpanded;
+                      });
+                    },
+                  ),
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.all(8.0),
+                      child: Container(
+                        decoration: const BoxDecoration(
+                          border: Border.fromBorderSide(BorderSide(
+                            width: 1,
+                            color: Colors.black12,
+                          )),
+                        ),
+                        child: TextField(
+                          controller: messageInputController,
+                          keyboardType: TextInputType.text,
+                          textInputAction: TextInputAction.send,
+                          onChanged: (_) => _publishTyping(context),
+                          onSubmitted: (_) => _sendMessage(context),
+                        ),
                       ),
                     ),
                   ),
-                ),
-                IconButton(
-                  onPressed: () => _sendMessage(context),
-                  icon: const Icon(Icons.send),
-                ),
-              ],
+                  IconButton(
+                    onPressed: () => _sendMessage(context),
+                    icon: const Icon(Icons.send),
+                  ),
+                ],
+              ),
             ),
-          ),
-          // if (isEmojiPickerExpanded)
-          //   Container(
-          //     height: 250,
-          //     color: Colors.blueGrey,
-          //     child: EmojiPicker(
-          //       config: Config(),
-          //       onEmojiSelected: (category, emoji) {
-          //         print('emoji($emoji) category($category)');
-          //         messageInputController.text += emoji.emoji;
-          //       },
-          //     ),
-          //   ),
-        ],
+            // if (isEmojiPickerExpanded)
+            //   Container(
+            //     height: 250,
+            //     color: Colors.blueGrey,
+            //     child: EmojiPicker(
+            //       config: Config(),
+            //       onEmojiSelected: (category, emoji) {
+            //         print('emoji($emoji) category($category)');
+            //         messageInputController.text += emoji.emoji;
+            //       },
+            //     ),
+            //   ),
+          ],
+        ),
       ),
     );
   }

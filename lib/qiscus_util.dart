@@ -46,6 +46,8 @@ class QiscusUtil extends ChangeNotifier implements ReassembleHandler {
       get upload => qiscus.upload;
 
   Future<void> setup(String appId) {
+    // qiscus.enableDebugMode(enable: true, level: QLogLevel.verbose);
+
     return qiscus.setup(appId);
   }
 
