@@ -149,7 +149,7 @@ class ChatBubble extends StatelessWidget {
         children: [
           if (message.payload?['progress'] != null) ...[
             // Image.file(File(message.payload['url'])),
-            LinearProgressIndicator(value: progress),
+            LinearProgressIndicator(value: progress.toDouble()),
           ],
           if ((message.payload?['url'] as String).startsWith('http'))
             Image.network(message.payload!['url'] as String),
@@ -161,7 +161,7 @@ class ChatBubble extends StatelessWidget {
               style: TextButton.styleFrom(
                 shape: const CircleBorder(),
                 minimumSize: const Size.fromWidth(14),
-                primary: Colors.white.withAlpha(0x55),
+                foregroundColor: Colors.white.withAlpha(0x55),
               ),
               child: const Icon(Icons.file_download, size: 18),
             ),
@@ -175,7 +175,7 @@ class ChatBubble extends StatelessWidget {
         children: [
           if (message.payload?['progress'] != null) ...[
             // Image.file(File(message.payload['url'])),
-            LinearProgressIndicator(value: progress),
+            LinearProgressIndicator(value: progress.toDouble()),
           ],
           Container(
             decoration: BoxDecoration(

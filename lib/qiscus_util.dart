@@ -129,13 +129,22 @@ class QiscusUtil extends ChangeNotifier implements ReassembleHandler {
       var data = await qiscus.getChatRoomWithMessages(roomId: roomId);
       var rooms =
           await qiscus.getChatRooms(roomIds: [roomId], showParticipants: true);
-      var room = rooms.firstWhere((r) => r.id == roomId);
-
       rooms.add(data.room);
       messages.addAll(data.messages);
       notifyListeners();
 
       return data.room;
+    }
+  }
+
+  Future<QChatRoom> getRoomWithIdNetwork(int roomId) async {
+    try {
+      var data = await qiscus.getChatRoomWithMessages(roomId: roomId);
+      return data.room;
+    } on StateError {
+      var room = rooms.firstWhere((it) => it.id == roomId);
+      room.unreadCount += 1;
+      return room;
     }
   }
 
@@ -267,7 +276,9 @@ class QiscusUtil extends ChangeNotifier implements ReassembleHandler {
 
     QChatRoom room;
     try {
+      var fetchRoom = await getRoomWithIdNetwork(message.chatRoomId);
       room = rooms.firstWhere((r) => r.id == message.chatRoomId);
+      room.unreadCount = fetchRoom.unreadCount;
     } catch (_) {
       room = await getRoomWithId(message.chatRoomId);
     }
