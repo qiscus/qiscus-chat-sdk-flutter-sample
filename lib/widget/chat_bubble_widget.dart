@@ -41,6 +41,7 @@ class ChatBubble extends StatelessWidget {
               children: <Widget>[
                 _buildSender(sender),
                 Stack(
+                  clipBehavior: Clip.none,
                   children: <Widget>[
                     GestureDetector(
                       onLongPress: () => onPress?.call(),
@@ -137,9 +138,9 @@ class ChatBubble extends StatelessWidget {
       return Text(message.text);
     }
 
-    String? url = message.payload?['url'];
+    String? url = message.payload?['url'] as String?;
     var isImage = url?.contains(RegExp(r'(jpe?g|png|gif)$')) ?? false;
-    var progress = message.payload?['progress'] ?? 0.0;
+    var progress = (message.payload?['progress'] as double?) ?? 0.0;
     progress = progress / 100;
 
     if (message.type == QMessageType.attachment && isImage) {
@@ -151,7 +152,7 @@ class ChatBubble extends StatelessWidget {
             LinearProgressIndicator(value: progress),
           ],
           if ((message.payload?['url'] as String).startsWith('http'))
-            Image.network(message.payload?['url']),
+            Image.network(message.payload!['url'] as String),
           Positioned(
             bottom: 0,
             left: 0,
@@ -187,12 +188,12 @@ class ChatBubble extends StatelessWidget {
                   onPressed: _download,
                   child: const Icon(Icons.file_download, size: 20),
                 ),
-                Text(message.payload?['file_name']),
+                Text(message.payload!['file_name'] as String),
               ],
             ),
           ),
           if ((message.payload?['caption'] as String).isNotEmpty)
-            Text(message.payload?['caption']),
+            Text(message.payload!['caption'] as String),
         ],
       );
     }
@@ -206,11 +207,11 @@ class ChatBubble extends StatelessWidget {
       var folder = await path.getApplicationDocumentsDirectory();
       var downloadFolder = folder.path;
       var r = await FlutterDownloader.enqueue(
-        url: message.payload?['url'],
+        url: message.payload?['url'] as String,
         savedDir: downloadFolder,
         showNotification: true,
         openFileFromNotification: true,
-        fileName: message.payload?['file_name'],
+        fileName: message.payload?['file_name'] as String,
       );
       if (r != null) {
         print('download: $r');
@@ -223,11 +224,10 @@ class ChatBubble extends StatelessWidget {
       return [
         Positioned(
           top: 0,
-          left: flipped ? -14 : null,
-          right: !flipped ? -14 : null,
+          left: -14,
           child: Icon(
             Icons.done_all,
-            size: 12,
+            size: 14,
             color: message.status == QMessageStatus.read
                 ? Colors.lightGreen
                 : Colors.grey,

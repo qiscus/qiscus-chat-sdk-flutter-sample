@@ -46,7 +46,6 @@ class MainAppState extends State<MainApp> {
   @override
   void initState() {
     super.initState();
-    qiscus.enableDebugMode(enable: false);
 
     _subs = Stream.periodic(
       const Duration(seconds: 3),
