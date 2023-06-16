@@ -48,16 +48,13 @@ class ChatPageState extends State<ChatPage> {
     var room = await qiscus.getRoomWithId(chatRoomId);
     await qiscus.getInitialMessages(room);
 
-    // qiscus.subscribeRoom(room);
-    // qiscus.subscribePresence(room);
+    setState(() {
+      this.room = room;
+      this.qiscus = qiscus;
+    });
 
-    _messageReceivedSubscription =
-        qiscus.qiscus.onMessageReceived().listen((_) {
-      debugPrint('@chat-page-state.on-message-received');
-    });
-    _roomClearedSubscription = qiscus.qiscus.onChatRoomCleared().listen((_) {
-      debugPrint('@chat-page-state.on-chat-room-cleared');
-    });
+    qiscus.subscribeRoom(room);
+    qiscus.subscribePresence(room);
   }
 
   @override
@@ -82,12 +79,11 @@ class ChatPageState extends State<ChatPage> {
     var qiscus = context.watch<QiscusUtil>();
     var account = context.watch<QAccount?>();
     var messages = QiscusUtil.getMessagesFor(context, chatRoomId: chatRoomId);
-    var room = context.select<QiscusUtil, QChatRoom>((it) {
-      return it.rooms.firstWhere((element) => element.id == chatRoomId);
-    });
 
     var presence = QiscusUtil.getPresenceForRoomId(context, chatRoomId);
     var typing = QiscusUtil.getTypingForRoomId(context, chatRoomId);
+
+    context.debugLog('room: $room');
 
     return WillPopScope(
       onWillPop: () async {
@@ -108,7 +104,9 @@ class ChatPageState extends State<ChatPage> {
                 flex: 0,
                 child: Hero(
                   tag: HeroTags.roomAvatar(roomId: chatRoomId),
-                  child: Avatar(url: room.avatarUrl!),
+                  child: room == null
+                      ? const CircularProgressIndicator()
+                      : Avatar(url: room!.avatarUrl!),
                 ),
               ),
               _buildTitle(room, typing, presence, context),
@@ -232,7 +230,7 @@ class ChatPageState extends State<ChatPage> {
 
   List<Widget> _buildActions(
     BuildContext context,
-    QChatRoom room,
+    QChatRoom? room,
   ) {
     var qiscus = context.watch<QiscusUtil>();
     return <Widget>[
@@ -255,7 +253,7 @@ class ChatPageState extends State<ChatPage> {
               await context.push(ChatRoomDetailPage(chatRoomId: chatRoomId));
               break;
             case _PopupMenu.clearMessages:
-              qiscus.clearMessagesByChatRoomId(roomUniqueIds: [room.uniqueId]);
+              qiscus.clearMessagesByChatRoomId(roomUniqueIds: [room!.uniqueId]);
               break;
             default:
               break;
@@ -265,7 +263,7 @@ class ChatPageState extends State<ChatPage> {
     ];
   }
 
-  Expanded _buildTitle(QChatRoom room, QUserTyping? typing,
+  Expanded _buildTitle(QChatRoom? room, QUserTyping? typing,
       QUserPresence? presence, BuildContext context) {
     return Expanded(
       flex: 1,
@@ -274,7 +272,7 @@ class ChatPageState extends State<ChatPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(room.name!),
+            room == null ? const CircularProgressIndicator() : Text(room.name!),
             if (typing == null && presence != null)
               _buildOnlinePresence(context, presence),
             if (typing != null) _buildTyping(context, typing),
