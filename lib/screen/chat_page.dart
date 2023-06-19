@@ -78,6 +78,9 @@ class ChatPageState extends State<ChatPage> {
   Widget build(BuildContext context) {
     var qiscus = context.watch<QiscusUtil>();
     var account = context.watch<QAccount?>();
+    var room = context.select<QiscusUtil, QChatRoom?>((it) {
+      return it.rooms.safeWhere((element) => element.id == chatRoomId);
+    });
     var messages = QiscusUtil.getMessagesFor(context, chatRoomId: chatRoomId);
 
     var presence = QiscusUtil.getPresenceForRoomId(context, chatRoomId);
@@ -106,7 +109,7 @@ class ChatPageState extends State<ChatPage> {
                   tag: HeroTags.roomAvatar(roomId: chatRoomId),
                   child: room == null
                       ? const CircularProgressIndicator()
-                      : Avatar(url: room!.avatarUrl!),
+                      : Avatar(url: room.avatarUrl!),
                 ),
               ),
               _buildTitle(room, typing, presence, context),
@@ -272,7 +275,7 @@ class ChatPageState extends State<ChatPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            room == null ? const CircularProgressIndicator() : Text(room.name!),
+            room == null ? const Text('Loading') : Text(room.name!),
             if (typing == null && presence != null)
               _buildOnlinePresence(context, presence),
             if (typing != null) _buildTyping(context, typing),

@@ -475,10 +475,11 @@ packages:
   qiscus_chat_sdk:
     dependency: "direct main"
     description:
-      path: "../qiscus-chat-sdk-flutter"
-      relative: true
-    source: path
-    version: "2.0.4"
+      name: qiscus_chat_sdk
+      sha256: fee645969639f1b50ea551cf342c71e42c3796ad34c4a2df4a58af1d0d75d698
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.0.8"
   riverpod:
     dependency: transitive
     description:

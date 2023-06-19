@@ -6,6 +6,7 @@ import 'package:qiscus_chat_sdk/qiscus_chat_sdk.dart';
 
 import '../constants.dart';
 import '../extensions.dart';
+import 'chat_page.dart';
 import 'room_list_page.dart';
 
 class LoginPage extends StatefulWidget {
@@ -18,11 +19,13 @@ class LoginPage extends StatefulWidget {
 }
 
 // var userId = const Uuid().v4();
-const userId = 'guest-1001';
+// const userId = 'guest-1001';
+const userId = '81';
+const userKey = 'password';
 
 class LoginPageState extends State<LoginPage> {
   final userIdController = TextEditingController(text: userId);
-  final userKeyController = TextEditingController(text: 'passkey');
+  final userKeyController = TextEditingController(text: userKey);
   final userNameController = TextEditingController(text: userId);
   final formKey = GlobalKey<FormState>();
   final scaffoldKey = GlobalKey<ScaffoldState>();
@@ -151,7 +154,14 @@ class LoginPageState extends State<LoginPage> {
                                 ScaffoldMessenger.of(context)
                                     .hideCurrentSnackBar();
 
-                                context.pushReplacement(const RoomListPage());
+                                // var room = await qiscus.qiscus
+                                //     .chatUser(userId: 'guest-1001');
+                                var room =
+                                    await qiscus.getRoomWithId(138671584);
+
+                                var page = ChatPage(chatRoomId: room.id);
+                                // var page = RoomListPage();
+                                context.pushReplacement(page);
                               } on QError catch (error) {
                                 final snackbar = SnackBar(
                                   content: Text(error.message),

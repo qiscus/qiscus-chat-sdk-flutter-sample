@@ -42,3 +42,13 @@ extension FilePickerX on FilePicker {
     return null;
   }
 }
+
+extension IterableX<T> on Iterable<T> {
+  T? safeWhere(bool Function(T) test) {
+    try {
+      return firstWhere(test);
+    } on StateError {
+      return null;
+    }
+  }
+}
