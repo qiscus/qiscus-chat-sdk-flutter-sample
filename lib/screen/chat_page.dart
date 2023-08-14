@@ -147,22 +147,29 @@ class ChatPageState extends State<ChatPage> {
                   return ChatBubble(
                     message: message,
                     flipped: sender.id == account?.id,
-                    onPress: () {
-                      showModalBottomSheet(
-                        context: context,
-                        builder: (BuildContext context) {
-                          return SafeArea(
-                            child: TextButton(
-                              child: const Text('Delete message'),
-                              onPressed: () {
-                                qiscus.deleteMessages(
-                                  messageUniqueIds: [message.uniqueId],
-                                ).then((_) => Navigator.pop(context));
-                              },
-                            ),
-                          );
-                        },
-                      );
+                    onPress: (data) {
+                      if(data != null){
+                        _sendMessagePostBack(context, data);
+                        Future.delayed(const Duration(milliseconds: 300), () {
+                          scrollController.jumpTo(scrollController.position.maxScrollExtent);
+                        });
+                      }else{
+                        showModalBottomSheet(
+                          context: context,
+                          builder: (BuildContext context) {
+                            return SafeArea(
+                              child: TextButton(
+                                child: const Text('Delete message'),
+                                onPressed: () {
+                                  qiscus.deleteMessages(
+                                    messageUniqueIds: [message.uniqueId],
+                                  ).then((_) => Navigator.pop(context));
+                                },
+                              ),
+                            );
+                          },
+                        );
+                      }
                     },
                   );
                 },
@@ -361,6 +368,18 @@ class ChatPageState extends State<ChatPage> {
     var message = context
         .read<QiscusSDK>()
         .generateMessage(chatRoomId: chatRoomId, text: text);
+
+    await qiscus.sendMessage(message: message);
+
+    messageInputController.clear();
+  }
+
+  Future<void> _sendMessagePostBack(BuildContext context, String postBackMessage) async {
+    var qiscus = context.read<QiscusUtil>();
+
+    var message = context
+        .read<QiscusSDK>()
+        .generateMessage(chatRoomId: chatRoomId, text: postBackMessage);
 
     await qiscus.sendMessage(message: message);
 

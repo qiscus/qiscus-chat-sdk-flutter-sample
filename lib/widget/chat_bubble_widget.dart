@@ -5,19 +5,20 @@ import 'package:path_provider/path_provider.dart' as path;
 import 'package:permission_handler/permission_handler.dart';
 import 'package:qiscus_chat_sdk/qiscus_chat_sdk.dart';
 
+import '../data/payload_data.dart';
 import '../widget/avatar_widget.dart';
 
 class ChatBubble extends StatelessWidget {
   const ChatBubble({
     super.key,
     required this.message,
-    this.onPress,
+    required this.onPress,
     this.flipped = false,
   });
 
   final bool flipped;
   final QMessage message;
-  final void Function()? onPress;
+  final void Function(String?) onPress;
 
   @override
   Widget build(BuildContext context) {
@@ -37,14 +38,14 @@ class ChatBubble extends StatelessWidget {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.start,
               crossAxisAlignment:
-                  flipped ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+              flipped ? CrossAxisAlignment.end : CrossAxisAlignment.start,
               children: <Widget>[
                 _buildSender(sender),
                 Stack(
                   clipBehavior: Clip.none,
                   children: <Widget>[
                     GestureDetector(
-                      onLongPress: () => onPress?.call(),
+                      onLongPress: () => onPress(null),
                       child: Container(
                         width: 200,
                         alignment: flipped
@@ -134,11 +135,32 @@ class ChatBubble extends StatelessWidget {
   }
 
   Widget _buildChild() {
+
+    CrossAxisAlignment alignment;
+    Color backgroundColor;
+    Color buttonColor;
+    List<String> buttonLabels = [];
+
+    if (flipped) {
+      alignment = CrossAxisAlignment.end;
+      backgroundColor = Colors.blue;
+      buttonColor = Colors.blue;
+    } else {
+      alignment = CrossAxisAlignment.start;
+      backgroundColor = Colors.grey[300]!;
+      buttonColor = Colors.grey[400]!;
+    }
     if (message.payload == null || message.payload?.isEmpty == true) {
       return Text(message.text);
     }
 
     String? url = message.payload?['url'] as String?;
+    final responseData = ResponseData.fromJson(message.payload!);
+    if(responseData.buttons.isNotEmpty){
+      for (var button in responseData.buttons) {
+        buttonLabels.add(button.label);
+      }
+    }
     var isImage = url?.contains(RegExp(r'(jpe?g|png|gif)$')) ?? false;
     var progress = (message.payload?['progress'] as double?) ?? 0.0;
     progress = progress / 100;
@@ -194,6 +216,40 @@ class ChatBubble extends StatelessWidget {
           ),
           if ((message.payload?['caption'] as String).isNotEmpty)
             Text(message.payload!['caption'] as String),
+        ],
+      );
+    }
+    if (message.type == QMessageType.custom && responseData.type == "buttons") {
+      return Stack(
+        alignment: Alignment.bottomCenter,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(16.0),
+            color: backgroundColor,
+            child: Column(
+              children: [
+                Text(
+                  message.text,
+                  style: const TextStyle(fontSize: 16.0),
+                ),
+                const SizedBox(height: 12.0),
+                Column(
+                  mainAxisAlignment: alignment == CrossAxisAlignment.start
+                      ? MainAxisAlignment.start
+                      : MainAxisAlignment.end,
+                  children: buttonLabels.map((label) {
+                    return ElevatedButton(
+                      onPressed: () => onPress(label),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: buttonColor,
+                      ),
+                      child: Text(label),
+                    );
+                  }).toList(),
+                ),
+              ],
+            ),
+          ),
         ],
       );
     }
