@@ -264,7 +264,7 @@ class QiscusUtil extends ChangeNotifier implements ReassembleHandler {
   @override
   void dispose() {
     super.dispose();
-    Future.wait(subs.map((it) => it.cancel()));
+    // Future.wait(subs.map((it) => it.cancel()));
   }
 
   void _mReceived(QMessage message) async {
