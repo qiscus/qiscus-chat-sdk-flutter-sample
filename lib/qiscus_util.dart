@@ -148,15 +148,31 @@ class QiscusUtil extends ChangeNotifier implements ReassembleHandler {
     }
   }
 
+  bool areSubscriptionsListening(List<StreamSubscription> subscriptions) {
+    for (var subscription in subscriptions) {
+      if (subscription.isPaused) {
+        return false; // At least one subscription is paused
+      }
+    }
+    return true; // All subscriptions are still listening
+  }
+
+  void cancelSubscriptions() {
+    Future.wait(subs.map((it) => it.cancel()));
+    subs.clear();
+  }
+
   void subscribe() {
-    subs.addAll([
-      qiscus.onMessageReceived().listen(_mReceived),
-      qiscus.onMessageDelivered().listen(_mDelivered),
-      qiscus.onMessageRead().listen(_mRead),
-      qiscus.onMessageDeleted().listen(_mDeleted),
-      qiscus.onUserOnlinePresence().listen(_uPresence),
-      qiscus.onUserTyping().listen(_uTyping),
-    ]);
+    if(!areSubscriptionsListening(subs)) {
+      subs.addAll([
+        qiscus.onMessageReceived().listen(_mReceived),
+        qiscus.onMessageDelivered().listen(_mDelivered),
+        qiscus.onMessageRead().listen(_mRead),
+        qiscus.onMessageDeleted().listen(_mDeleted),
+        qiscus.onUserOnlinePresence().listen(_uPresence),
+        qiscus.onUserTyping().listen(_uTyping),
+      ]);
+    }
   }
 
   Future<void> clearUser() async {
@@ -264,7 +280,7 @@ class QiscusUtil extends ChangeNotifier implements ReassembleHandler {
   @override
   void dispose() {
     super.dispose();
-    // Future.wait(subs.map((it) => it.cancel()));
+    cancelSubscriptions();
   }
 
   void _mReceived(QMessage message) async {
