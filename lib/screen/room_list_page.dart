@@ -80,6 +80,7 @@ class RoomListPageState extends State<RoomListPage> {
                 case MenuItems.logout:
                   {
                     context.read<QiscusUtil>().clearUser();
+                    context.read<QiscusUtil>().cancelSubscriptions();
                     context.pushReplacement(const LoginPage());
 
                     break;
