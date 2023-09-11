@@ -370,6 +370,9 @@ class ChatPageState extends State<ChatPage> {
         .generateMessage(chatRoomId: chatRoomId, text: text);
 
     await qiscus.sendMessage(message: message);
+    Future.delayed(const Duration(milliseconds: 300), () {
+      scrollController.jumpTo(scrollController.position.maxScrollExtent);
+    });
 
     messageInputController.clear();
   }
