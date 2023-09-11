@@ -76,6 +76,23 @@ class QiscusUtil extends ChangeNotifier implements ReassembleHandler {
     return qiscus.currentUser;
   }
 
+  Future<void> readMessage(QChatRoom room)  async {
+    await qiscus.markAsRead(roomId: room.id, messageId: room.lastMessage?.id ?? 0);
+    room.unreadCount = 0;
+    try {
+      var previousRoom = rooms.firstWhere((it) => it.id == room.id);
+      previousRoom.unreadCount = 0;
+      notifyListeners();
+    } on StateError {
+      var data = await qiscus.getChatRoomWithMessages(roomId: room.id);
+      var rooms =
+      await qiscus.getChatRooms(roomIds: [room.id], showParticipants: true);
+      rooms.add(data.room);
+      messages.addAll(data.messages);
+      notifyListeners();
+    }
+  }
+
   String defaultAvatarUrl()  {
     return "https://www.gravatar.com/avatar/205e460b479e2e5b48aec07710c08d50.jpg";
   }
@@ -171,6 +188,7 @@ class QiscusUtil extends ChangeNotifier implements ReassembleHandler {
   }
 
   void resetLocalData(){
+    messages = {};
     rooms = {};           // Reset rooms to an empty set
     subs.clear();         // Clear all stream subscriptions
     account = null;       // Reset account to null
