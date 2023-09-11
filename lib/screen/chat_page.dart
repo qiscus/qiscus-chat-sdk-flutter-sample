@@ -77,7 +77,7 @@ class ChatPageState extends State<ChatPage> {
   @override
   Widget build(BuildContext context) {
     var qiscus = context.watch<QiscusUtil>();
-    var account = context.watch<QAccount?>();
+    var account = qiscus.getCurrentUser();
     var messages = QiscusUtil.getMessagesFor(context, chatRoomId: chatRoomId);
 
     var presence = QiscusUtil.getPresenceForRoomId(context, chatRoomId);
