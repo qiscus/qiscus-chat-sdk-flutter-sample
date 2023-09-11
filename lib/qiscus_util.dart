@@ -51,7 +51,7 @@ class QiscusUtil extends ChangeNotifier implements ReassembleHandler {
     return qiscus.setup(appId);
   }
 
-  Future<QAccount> setUser({
+  Future<QAccount?> setUser({
     required String userId,
     required String userKey,
     String? username,
@@ -70,6 +70,14 @@ class QiscusUtil extends ChangeNotifier implements ReassembleHandler {
     notifyListeners();
 
     return account;
+  }
+
+  QAccount? getCurrentUser()  {
+    return qiscus.currentUser;
+  }
+
+  String defaultAvatarUrl()  {
+    return "https://www.gravatar.com/avatar/205e460b479e2e5b48aec07710c08d50.jpg";
   }
 
   Future<void> getInitialMessages(QChatRoom room) async {
@@ -162,6 +170,15 @@ class QiscusUtil extends ChangeNotifier implements ReassembleHandler {
     subs.clear();
   }
 
+  void resetLocalData(){
+    rooms = {};           // Reset rooms to an empty set
+    subs.clear();         // Clear all stream subscriptions
+    account = null;       // Reset account to null
+    users = {};           // Reset users to an empty set
+    typings = {};         // Reset typings to an empty set
+    presences = {};
+  }
+
   void subscribe() {
     if(!areSubscriptionsListening(subs)) {
       subs.addAll([
@@ -177,7 +194,7 @@ class QiscusUtil extends ChangeNotifier implements ReassembleHandler {
 
   Future<void> clearUser() async {
     await qiscus.clearUser();
-    account = null;
+    resetLocalData();
 
     notifyListeners();
   }
@@ -253,6 +270,7 @@ class QiscusUtil extends ChangeNotifier implements ReassembleHandler {
   }) {
     return context.select<QiscusUtil, QMessage?>((it) {
       List<QMessage> messages = [];
+      if(it.rooms.isEmpty) return null;
       var room = it.rooms.firstWhere((r) => r.id == chatRoomId);
       try {
         messages = it.messages.where((m) => m.chatRoomId == chatRoomId).toList()
