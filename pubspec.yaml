@@ -24,6 +24,7 @@ dependencies:
   uuid: ^3.0.7
   logger: ^1.1.0
   flutter_logger: ^0.0.6
+  visibility_detector: ^0.4.0+2
 
 # dependency_overrides:
 #   qiscus_chat_sdk:
