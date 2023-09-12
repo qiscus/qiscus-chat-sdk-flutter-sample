@@ -69,7 +69,7 @@ class ChatPageState extends State<ChatPage> {
   @override
   void dispose() {
     super.dispose();
-    qiscus?.readMessage(room!);
+    qiscus?.readMessage(room!,room!.lastMessage!);
     if (room != null) {
       qiscus?.unsubscribeRoom(room!);
     }

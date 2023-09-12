@@ -76,21 +76,11 @@ class QiscusUtil extends ChangeNotifier implements ReassembleHandler {
     return qiscus.currentUser;
   }
 
-  Future<void> readMessage(QChatRoom room)  async {
-    await qiscus.markAsRead(roomId: room.id, messageId: room.lastMessage?.id ?? 0);
-    room.unreadCount = 0;
-    try {
-      var previousRoom = rooms.firstWhere((it) => it.id == room.id);
-      previousRoom.unreadCount = 0;
-      notifyListeners();
-    } on StateError {
-      var data = await qiscus.getChatRoomWithMessages(roomId: room.id);
-      var rooms =
-      await qiscus.getChatRooms(roomIds: [room.id], showParticipants: true);
-      rooms.add(data.room);
-      messages.addAll(data.messages);
-      notifyListeners();
-    }
+  Future<void> readMessage(QChatRoom room, QMessage lastMessageVisible)  async {
+    await qiscus.markAsRead(roomId: room.id, messageId: lastMessageVisible.id);
+    var data = await qiscus.getChatRoomWithMessages(roomId: room.id);
+    room.unreadCount = data.room.unreadCount;
+    notifyListeners();
   }
 
   String defaultAvatarUrl()  {
