@@ -9,7 +9,8 @@ dependencies:
   flutter:
     sdk: flutter
   cupertino_icons: ^1.0.2
-  qiscus_chat_sdk: ^2.0.0
+  equatable: ^2.0.3
+  qiscus_chat_sdk: ^2.0.11
   firebase_messaging: ^14.2.1
   timeago: ^3.3.0
   provider: ^6.0.3
@@ -23,6 +24,7 @@ dependencies:
   uuid: ^3.0.7
   logger: ^1.1.0
   flutter_logger: ^0.0.6
+  visibility_detector: ^0.4.0+2
 
 # dependency_overrides:
 #   qiscus_chat_sdk:

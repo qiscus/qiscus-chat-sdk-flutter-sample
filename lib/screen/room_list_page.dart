@@ -7,6 +7,7 @@ import 'package:qiscus_chat_sdk/qiscus_chat_sdk.dart';
 
 import '../constants.dart';
 import '../extensions.dart';
+import '../main.dart';
 import '../qiscus_util.dart';
 import '../widget/avatar_widget.dart';
 import 'chat_page.dart';
@@ -41,7 +42,9 @@ class RoomListPageState extends State<RoomListPage> {
 
   @override
   Widget build(BuildContext context) {
-    var account = context.watch<QAccount?>();
+    var qiscus = context.watch<QiscusUtil>();
+    var account = qiscus.getCurrentUser();
+    logger.d('data: $account');
     var rooms = context.select<QiscusUtil, List<QChatRoom>>((it) {
       return it.rooms.toList().where((r) => r.lastMessage != null).toList()
         ..sort((r1, r2) {
@@ -80,6 +83,7 @@ class RoomListPageState extends State<RoomListPage> {
                 case MenuItems.logout:
                   {
                     context.read<QiscusUtil>().clearUser();
+                    context.read<QiscusUtil>().cancelSubscriptions();
                     context.pushReplacement(const LoginPage());
 
                     break;

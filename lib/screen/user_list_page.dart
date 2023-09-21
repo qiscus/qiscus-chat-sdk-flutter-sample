@@ -30,6 +30,7 @@ class UserListPageState extends State<UserListPage> {
   @override
   void initState() {
     super.initState();
+    _initializePage(context);
   }
 
   @override

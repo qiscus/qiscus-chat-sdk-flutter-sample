@@ -8,6 +8,7 @@ import 'package:grouped_list/grouped_list.dart';
 import 'package:provider/provider.dart';
 import 'package:qiscus_chat_sdk/qiscus_chat_sdk.dart';
 import 'package:timeago/timeago.dart' as timeago;
+import 'package:visibility_detector/visibility_detector.dart';
 
 import '../constants.dart';
 import '../extensions.dart';
@@ -39,6 +40,7 @@ class ChatPageState extends State<ChatPage> {
   final scrollController = ScrollController();
   QChatRoom? room;
   QiscusUtil? qiscus;
+  List<int> visibleMessagesIds = [];
 
   late StreamSubscription _messageReceivedSubscription;
   late StreamSubscription _roomClearedSubscription;
@@ -69,6 +71,11 @@ class ChatPageState extends State<ChatPage> {
   @override
   void dispose() {
     super.dispose();
+    if(visibleMessagesIds.isNotEmpty){
+      int lastMessageVisible = visibleMessagesIds.reduce((value1, value2) => value1 > value2 ? value1 : value2);
+      debugPrint('last message read $lastMessageVisible');
+      qiscus?.readMessage(room!,lastMessageVisible);
+    }
     if (room != null) {
       qiscus?.unsubscribeRoom(room!);
     }
@@ -77,7 +84,7 @@ class ChatPageState extends State<ChatPage> {
   @override
   Widget build(BuildContext context) {
     var qiscus = context.watch<QiscusUtil>();
-    var account = context.watch<QAccount?>();
+    var account = qiscus.getCurrentUser();
     var messages = QiscusUtil.getMessagesFor(context, chatRoomId: chatRoomId);
 
     var presence = QiscusUtil.getPresenceForRoomId(context, chatRoomId);
@@ -144,27 +151,46 @@ class ChatPageState extends State<ChatPage> {
                 },
                 itemBuilder: (context, message) {
                   final sender = message.sender;
-                  return ChatBubble(
-                    message: message,
-                    flipped: sender.id == account?.id,
-                    onPress: () {
-                      showModalBottomSheet(
-                        context: context,
-                        builder: (BuildContext context) {
-                          return SafeArea(
-                            child: TextButton(
-                              child: const Text('Delete message'),
-                              onPressed: () {
-                                qiscus.deleteMessages(
-                                  messageUniqueIds: [message.uniqueId],
-                                ).then((_) => Navigator.pop(context));
-                              },
-                            ),
-                          );
-                        },
-                      );
+                  return VisibilityDetector(
+                    key: Key('${message.id}'),
+                    onVisibilityChanged: (visibilityInfo) {
+                      var visiblePercentage = visibilityInfo.visibleFraction * 100;
+                      debugPrint(
+                          'this message id ${visibilityInfo.key} is $visiblePercentage% visible');
+                      String keyString = visibilityInfo.key.toString(); // Convert the Key to a string
+                      int? intValue = int.tryParse(keyString.replaceAll(RegExp(r'\D'), ''));
+                      if(visiblePercentage == 100.0){
+                        visibleMessagesIds.add(intValue!);
+                      }
                     },
-                  );
+                    child : ChatBubble(
+                      message: message,
+                      flipped: sender.id == account?.id,
+                      onPress: (data) {
+                        if(data != null){
+                          _sendMessagePostBack(context, data);
+                          Future.delayed(const Duration(milliseconds: 300), () {
+                            scrollController.jumpTo(scrollController.position.maxScrollExtent);
+                          });
+                        }else{
+                          showModalBottomSheet(
+                            context: context,
+                            builder: (BuildContext context) {
+                              return SafeArea(
+                                child: TextButton(
+                                  child: const Text('Delete message'),
+                                  onPressed: () {
+                                    qiscus.deleteMessages(
+                                      messageUniqueIds: [message.uniqueId],
+                                    ).then((_) => Navigator.pop(context));
+                                  },
+                                ),
+                              );
+                            },
+                          );
+                        }
+                      },
+                    ));
                 },
               ),
             ),
@@ -361,6 +387,21 @@ class ChatPageState extends State<ChatPage> {
     var message = context
         .read<QiscusSDK>()
         .generateMessage(chatRoomId: chatRoomId, text: text);
+
+    await qiscus.sendMessage(message: message);
+    Future.delayed(const Duration(milliseconds: 300), () {
+      scrollController.jumpTo(scrollController.position.maxScrollExtent);
+    });
+
+    messageInputController.clear();
+  }
+
+  Future<void> _sendMessagePostBack(BuildContext context, String postBackMessage) async {
+    var qiscus = context.read<QiscusUtil>();
+
+    var message = context
+        .read<QiscusSDK>()
+        .generateMessage(chatRoomId: chatRoomId, text: postBackMessage);
 
     await qiscus.sendMessage(message: message);
 
