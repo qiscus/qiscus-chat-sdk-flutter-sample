@@ -58,9 +58,22 @@ class RoomListPageState extends State<RoomListPage> {
           padding: const EdgeInsets.all(10.0),
           child: Hero(
             tag: HeroTags.accountAvatar,
-            child: account == null
-                ? const CircularProgressIndicator()
-                : Avatar(url: account.avatarUrl!),
+            child: FutureBuilder<QAccount>(
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const CircularProgressIndicator();
+                } else if (snapshot.hasError) {
+                  return Text('Error: ${snapshot.error}');
+                } else {
+                  final jsonData = snapshot.data;
+                  print('halo ${jsonData?.avatarUrl}');
+                  return account == null
+                      ? const CircularProgressIndicator()
+                      : Avatar(url: jsonData?.avatarUrl ?? '');
+                }
+              },
+              future: qiscus.qiscus.getUserData(),
+            ),
           ),
         ),
         title: Text(account?.name ?? 'Loading...'),
