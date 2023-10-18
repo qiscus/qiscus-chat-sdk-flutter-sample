@@ -38,7 +38,7 @@ class ChatBubble extends StatelessWidget {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.start,
               crossAxisAlignment:
-              flipped ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+                  flipped ? CrossAxisAlignment.end : CrossAxisAlignment.start,
               children: <Widget>[
                 _buildSender(sender),
                 Stack(
@@ -155,8 +155,13 @@ class ChatBubble extends StatelessWidget {
     }
 
     String? url = message.payload?['url'] as String?;
-    final responseData = ResponseData.fromJson(message.payload!);
-    if(responseData.buttons.isNotEmpty){
+    ResponseData? responseData;
+    try {
+      responseData = ResponseData.fromJson(message.payload!);
+    } catch (e) {
+      responseData = null;
+    }
+    if (responseData != null  && responseData.buttons.isNotEmpty) {
       for (var button in responseData.buttons) {
         buttonLabels.add(button.label);
       }
@@ -167,28 +172,28 @@ class ChatBubble extends StatelessWidget {
 
     if (message.type == QMessageType.attachment && isImage) {
       return Stack(
-        alignment: Alignment.bottomCenter,
-        children: [
-          if (message.payload?['progress'] != null) ...[
-            // Image.file(File(message.payload['url'])),
-            LinearProgressIndicator(value: progress.toDouble()),
-          ],
-          if ((message.payload?['url'] as String).startsWith('http'))
-            Image.network(message.payload!['url'] as String),
-          Positioned(
-            bottom: 0,
-            left: 0,
-            child: TextButton(
-              onPressed: () => _download(),
-              style: TextButton.styleFrom(
-                shape: const CircleBorder(),
-                minimumSize: const Size.fromWidth(14),
-                foregroundColor: Colors.white.withAlpha(0x55),
+          alignment: Alignment.bottomCenter,
+          children: [
+            if (message.payload?['progress'] != null) ...[
+              // Image.file(File(message.payload['url'])),
+              LinearProgressIndicator(value: progress.toDouble()),
+            ],
+            if ((message.payload?['url'] as String).startsWith('http'))
+              Image.network(message.payload!['url'] as String),
+            Positioned(
+              bottom: 0,
+              left: 0,
+              child: TextButton(
+                onPressed: () => _download(),
+                style: TextButton.styleFrom(
+                  shape: const CircleBorder(),
+                  minimumSize: const Size.fromWidth(14),
+                  foregroundColor: Colors.white.withAlpha(0x55),
+                ),
+                child: const Icon(Icons.file_download, size: 18),
               ),
-              child: const Icon(Icons.file_download, size: 18),
             ),
-          ),
-        ],
+          ],
       );
     }
     if (message.type == QMessageType.attachment && !isImage) {
@@ -219,7 +224,7 @@ class ChatBubble extends StatelessWidget {
         ],
       );
     }
-    if (message.type == QMessageType.custom && responseData.type == "buttons") {
+    if (message.type == QMessageType.custom && responseData?.type == "buttons") {
       return Stack(
         alignment: Alignment.bottomCenter,
         children: [
