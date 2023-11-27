@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:date_format/date_format.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:qiscus_chat_sdk/qiscus_chat_sdk.dart';
@@ -43,6 +44,7 @@ class RoomListPageState extends State<RoomListPage> {
   @override
   Widget build(BuildContext context) {
     var qiscus = context.watch<QiscusUtil>();
+    var firebase = context.watch<FirebaseMessaging>();
     var account = qiscus.getCurrentUser();
     logger.d('data: $account');
     var rooms = context.select<QiscusUtil, List<QChatRoom>>((it) {
@@ -58,9 +60,21 @@ class RoomListPageState extends State<RoomListPage> {
           padding: const EdgeInsets.all(10.0),
           child: Hero(
             tag: HeroTags.accountAvatar,
-            child: account == null
-                ? const CircularProgressIndicator()
-                : Avatar(url: account.avatarUrl!),
+            child: FutureBuilder<QAccount>(
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const CircularProgressIndicator();
+                } else if (snapshot.hasError) {
+                  return Text('Error: ${snapshot.error}');
+                } else {
+                  final jsonData = snapshot.data;
+                  return account == null
+                      ? const CircularProgressIndicator()
+                      : Avatar(url: jsonData?.avatarUrl ?? '');
+                }
+              },
+              future: qiscus.qiscus.getUserData(),
+            ),
           ),
         ),
         title: Text(account?.name ?? 'Loading...'),
@@ -82,10 +96,13 @@ class RoomListPageState extends State<RoomListPage> {
               switch (item) {
                 case MenuItems.logout:
                   {
-                    context.read<QiscusUtil>().clearUser();
-                    context.read<QiscusUtil>().cancelSubscriptions();
+                    final token = await firebase.getToken();
+                    if(token != null){
+                      qiscus.qiscus.removeDeviceToken(token: token);
+                      logger.d("QISCUS token $token REMOVED");
+                    }
+                    qiscus.clearUser();
                     context.pushReplacement(const LoginPage());
-
                     break;
                   }
 
