@@ -164,15 +164,6 @@ class QiscusUtil extends ChangeNotifier implements ReassembleHandler {
     }
   }
 
-  bool areSubscriptionsListening(List<StreamSubscription> subscriptions) {
-    for (var subscription in subscriptions) {
-      if (subscription.isPaused) {
-        return false; // At least one subscription is paused
-      }
-    }
-    return true; // All subscriptions are still listening
-  }
-
   void cancelSubscriptions() {
     Future.wait(subs.map((it) => it.cancel()));
     subs.clear();
@@ -180,8 +171,7 @@ class QiscusUtil extends ChangeNotifier implements ReassembleHandler {
 
   void resetLocalData(){
     messages = {};
-    rooms = {};           // Reset rooms to an empty set
-    subs.clear();         // Clear all stream subscriptions
+    rooms = {};      // Clear all stream subscriptions
     account = null;       // Reset account to null
     users = {};           // Reset users to an empty set
     typings = {};         // Reset typings to an empty set
@@ -189,16 +179,15 @@ class QiscusUtil extends ChangeNotifier implements ReassembleHandler {
   }
 
   void subscribe() {
-    if(!areSubscriptionsListening(subs)) {
-      subs.addAll([
-        qiscus.onMessageReceived().listen(_mReceived),
-        qiscus.onMessageDelivered().listen(_mDelivered),
-        qiscus.onMessageRead().listen(_mRead),
-        qiscus.onMessageDeleted().listen(_mDeleted),
-        qiscus.onUserOnlinePresence().listen(_uPresence),
-        qiscus.onUserTyping().listen(_uTyping),
-      ]);
-    }
+    if (subs.isNotEmpty) return;
+    subs.addAll([
+      qiscus.onMessageReceived().listen(_mReceived,cancelOnError: true),
+      qiscus.onMessageDelivered().listen(_mDelivered,cancelOnError: true),
+      qiscus.onMessageRead().listen(_mRead,cancelOnError: true),
+      qiscus.onMessageDeleted().listen(_mDeleted,cancelOnError: true),
+      qiscus.onUserOnlinePresence().listen(_uPresence,cancelOnError: true),
+      qiscus.onUserTyping().listen(_uTyping,cancelOnError: true),
+    ]);
   }
 
   Future<void> clearUser() async {
