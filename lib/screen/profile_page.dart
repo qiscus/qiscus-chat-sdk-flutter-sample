@@ -27,10 +27,11 @@ class ProfilePageState extends State<ProfilePage> {
   var scaffoldKey = GlobalKey<ScaffoldState>();
 
   Future<void> _initializePage(BuildContext context) async {
-    var account = context.read<QAccount>();
+    var qiscus = context.read<QiscusUtil>();
+    var account = qiscus.getCurrentUser();
     setState(() {
-      accountIdController.text = account.id;
-      accountNameController.text = account.name;
+      accountIdController.text = account?.id ?? "Loading";
+      accountNameController.text = account?.name ?? "Loading";
     });
   }
 
@@ -64,7 +65,7 @@ class ProfilePageState extends State<ProfilePage> {
                         child: isLoading
                             ? const CircularProgressIndicator()
                             : Image.network(
-                                context.watch<QAccount>().avatarUrl!,
+                                qiscus.getCurrentUser()?.avatarUrl ?? qiscus.defaultAvatarUrl(),
                                 fit: BoxFit.cover,
                               ),
                       ),
@@ -125,6 +126,10 @@ class ProfilePageState extends State<ProfilePage> {
                           ScaffoldMessenger.of(context).showSnackBar(snackbar);
 
                           qiscus.updateUser(name: name).then((r) {
+                            setState(() {
+                              accountIdController.text = r.id;
+                              accountNameController.text = r.name;
+                            });
                             print('sukses update account: $r');
 
                             ScaffoldMessenger.of(context).hideCurrentSnackBar();
