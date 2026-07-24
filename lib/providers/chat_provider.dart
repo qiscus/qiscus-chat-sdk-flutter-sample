@@ -44,9 +44,20 @@ class ChatProvider with ChangeNotifier {
   StreamSubscription? _userPresenceSub;
   StreamSubscription? _connectedSub;
   StreamSubscription? _reconnectingSub;
+  Timer? _markAsReadDebounce;
 
   ChatProvider() {
     _setupEventListeners();
+  }
+
+  /// Debounce markAsRead so a burst of incoming messages results in a
+  /// single `update_comment_status` request for the latest message,
+  /// instead of one request per message (which can trigger 429s).
+  void _scheduleMarkAsRead({required int roomId, required int messageId}) {
+    _markAsReadDebounce?.cancel();
+    _markAsReadDebounce = Timer(const Duration(milliseconds: 500), () {
+      _qiscusService.markAsRead(roomId: roomId, messageId: messageId);
+    });
   }
 
   /// Setup real-time event listeners
@@ -65,11 +76,10 @@ class ChatProvider with ChangeNotifier {
 
       if (_currentRoom != null && message.chatRoomId == _currentRoom!.id) {
         _addMessage(message);
-        // Auto mark as read
-        _qiscusService.markAsRead(
-          roomId: message.chatRoomId,
-          messageId: message.id,
-        );
+        // Auto mark as read, debounced so a burst of messages (e.g. backfill
+        // after resync) only sends one request for the latest message
+        // instead of one `update_comment_status` call per message.
+        _scheduleMarkAsRead(roomId: message.chatRoomId, messageId: message.id);
       }
       _updateUnreadCount();
     });
@@ -564,6 +574,7 @@ class ChatProvider with ChangeNotifier {
     _userPresenceSub?.cancel();
     _connectedSub?.cancel();
     _reconnectingSub?.cancel();
+    _markAsReadDebounce?.cancel();
     super.dispose();
   }
 }
