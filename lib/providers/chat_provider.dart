@@ -261,12 +261,20 @@ class ChatProvider with ChangeNotifier {
   Future<void> sendMessage(String text) async {
     if (_currentRoom == null || text.trim().isEmpty) return;
 
+    final pendingMessage = _qiscusService.sdk.generateMessage(
+      chatRoomId: _currentRoom!.id,
+      text: text,
+    );
+    _addMessage(pendingMessage);
+
     try {
-      await _qiscusService.sendMessage(
+      final sentMessage = await _qiscusService.sendMessage(
         chatRoomId: _currentRoom!.id,
         text: text,
       );
+      _updateMessageInList(pendingMessage, sentMessage);
     } catch (e) {
+      _removeMessage(pendingMessage);
       _error = e.toString();
       notifyListeners();
     }
@@ -501,7 +509,7 @@ class ChatProvider with ChangeNotifier {
 
   /// Add message to list
   void _addMessage(QMessage message) {
-    final index = _messages.indexWhere((m) => m.id == message.id);
+    final index = _messages.indexWhere((m) => m.uniqueId == message.uniqueId);
     if (index == -1) {
       _messages.add(message);
       notifyListeners();
