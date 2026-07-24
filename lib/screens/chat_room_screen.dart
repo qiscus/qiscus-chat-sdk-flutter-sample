@@ -24,6 +24,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
   final ImagePicker _imagePicker = ImagePicker();
   late ChatProvider _chatProvider;
   String? _lastMessageUniqueId;
+  final ValueNotifier<bool> _showScrollToBottom = ValueNotifier(false);
 
   @override
   void didChangeDependencies() {
@@ -48,15 +49,23 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
   void dispose() {
     _messageController.dispose();
     _scrollController.dispose();
+    _showScrollToBottom.dispose();
     // Use saved reference instead of context.read()
     _chatProvider.leaveChatRoom();
     super.dispose();
   }
 
   void _onScroll() {
-    if (_scrollController.position.pixels <=
-        _scrollController.position.minScrollExtent + 100) {
+    final position = _scrollController.position;
+    if (position.pixels <= position.minScrollExtent + 100) {
       context.read<ChatProvider>().loadPreviousMessages();
+    }
+
+    // Only flip the notifier (and thus rebuild) when the near-bottom
+    // state actually changes, not on every scroll pixel.
+    final isNearBottom = position.pixels >= position.maxScrollExtent - 100;
+    if (_showScrollToBottom.value == isNearBottom) {
+      _showScrollToBottom.value = !isNearBottom;
     }
   }
 
@@ -97,10 +106,14 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
     }
   }
 
-  void _scrollToBottom() {
-    if (_scrollController.hasClients) {
+  void _scrollToBottom({bool jump = false}) {
+    if (!_scrollController.hasClients) return;
+    final maxExtent = _scrollController.position.maxScrollExtent;
+    if (jump) {
+      _scrollController.jumpTo(maxExtent);
+    } else {
       _scrollController.animateTo(
-        _scrollController.position.maxScrollExtent,
+        maxExtent,
         duration: const Duration(milliseconds: 300),
         curve: Curves.easeOut,
       );
@@ -230,10 +243,11 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
 
                     final messages = chatProvider.messages;
                     final newestId = messages.last.uniqueId;
-                    if (_lastMessageUniqueId != null &&
-                        newestId != _lastMessageUniqueId) {
-                      WidgetsBinding.instance
-                          .addPostFrameCallback((_) => _scrollToBottom());
+                    if (newestId != _lastMessageUniqueId) {
+                      final isFirstLoad = _lastMessageUniqueId == null;
+                      WidgetsBinding.instance.addPostFrameCallback(
+                        (_) => _scrollToBottom(jump: isFirstLoad),
+                      );
                     }
                     _lastMessageUniqueId = newestId;
 
@@ -272,10 +286,17 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
           Positioned(
             bottom: 120,
             right: 10,
-            child: FloatingActionButton.small(
-              onPressed: _scrollToBottom,
-              elevation: 2,
-              child: const Icon(Icons.arrow_drop_down_sharp),
+            child: ValueListenableBuilder<bool>(
+              valueListenable: _showScrollToBottom,
+              builder: (context, showButton, child) {
+                if (!showButton) return const SizedBox.shrink();
+                return child!;
+              },
+              child: FloatingActionButton.small(
+                onPressed: _scrollToBottom,
+                elevation: 2,
+                child: const Icon(Icons.arrow_drop_down_sharp),
+              ),
             ),
           ),
         ],
