@@ -23,6 +23,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
   final ScrollController _scrollController = ScrollController();
   final ImagePicker _imagePicker = ImagePicker();
   late ChatProvider _chatProvider;
+  String? _lastMessageUniqueId;
 
   @override
   void didChangeDependencies() {
@@ -65,7 +66,6 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
 
     _messageController.clear();
     await context.read<ChatProvider>().sendMessage(text);
-    _scrollToBottom();
   }
 
   Future<void> _pickImage() async {
@@ -228,10 +228,19 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                       );
                     }
 
+                    final messages = chatProvider.messages;
+                    final newestId = messages.last.uniqueId;
+                    if (_lastMessageUniqueId != null &&
+                        newestId != _lastMessageUniqueId) {
+                      WidgetsBinding.instance
+                          .addPostFrameCallback((_) => _scrollToBottom());
+                    }
+                    _lastMessageUniqueId = newestId;
+
                     return ListView.builder(
                       controller: _scrollController,
                       padding: const EdgeInsets.all(16),
-                      itemCount: chatProvider.messages.length +
+                      itemCount: messages.length +
                           (chatProvider.isLoadingMore ? 1 : 0),
                       itemBuilder: (context, index) {
                         if (chatProvider.isLoadingMore && index == 0) {
@@ -245,7 +254,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
 
                         final messageIndex =
                             chatProvider.isLoadingMore ? index - 1 : index;
-                        final message = chatProvider.messages[messageIndex];
+                        final message = messages[messageIndex];
                         final isMe = message.sender.id == currentUserId;
 
                         return MessageBubble(
@@ -264,14 +273,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
             bottom: 120,
             right: 10,
             child: FloatingActionButton.small(
-              onPressed: () {
-                debugPrint('scroll!!');
-                _scrollController.animateTo(
-                  _scrollController.offset,
-                  duration: const Duration(milliseconds: 250),
-                  curve: Curves.linear,
-                );
-              },
+              onPressed: _scrollToBottom,
               elevation: 2,
               child: const Icon(Icons.arrow_drop_down_sharp),
             ),
