@@ -53,15 +53,16 @@ class QiscusService {
   Stream<QUserPresence> get onUserPresence => _userPresenceController.stream;
 
   /// Initialize Qiscus SDK
-  /// Replace 'YOUR_APP_ID' with your actual Qiscus App ID
+  /// Pass your App ID via `--dart-define=QISCUS_APP_ID=your-app-id`
+  /// (never hardcode a real App ID in source, especially a client's).
   Future<void> initialize() async {
     try {
-      const appId = 'sdksample';
+      const appId = String.fromEnvironment('QISCUS_APP_ID');
       debugPrint('🚀 Initializing Qiscus SDK with APP_ID: $appId');
 
-      if (appId == 'YOUR_APP_ID') {
+      if (appId.isEmpty) {
         throw Exception(
-            'Please replace YOUR_APP_ID with your actual Qiscus App ID in qiscus_service.dart');
+            'QISCUS_APP_ID is not set. Run with --dart-define=QISCUS_APP_ID=your-app-id');
       }
 
       await sdk.setupWithCustomServer(
@@ -71,7 +72,7 @@ class QiscusService {
       );
 
       // Enable debug mode for development
-      // sdk.enableDebugMode(enable: true, level: QLogLevel.verbose);
+      sdk.enableDebugMode(enable: true, level: QLogLevel.verbose);
 
       // Setup event listeners
       _setupEventListeners();
@@ -143,6 +144,15 @@ class QiscusService {
     });
   }
 
+  /// Force a REST-based message sync, bypassing MQTT entirely.
+  /// Used as a safety net for the MQTT subscribe race on login and
+  /// for app-lifecycle resume, since a missed MQTT subscribe at login
+  /// is never retried by the SDK for the rest of the session.
+  void forceSynchronize() {
+    sdk.synchronize();
+    debugPrint('🔄 Forced REST synchronize');
+  }
+
   /// Login user with userId and userKey
   Future<QAccount> loginWithCredentials({
     required String userId,
@@ -181,6 +191,7 @@ class QiscusService {
       }
 
       debugPrint('✅ User logged in: ${account.id}');
+      Future.delayed(const Duration(seconds: 2), forceSynchronize);
       return account;
     } on TypeError catch (e, stackTrace) {
       debugPrint('❌ Type error during login: $e');
@@ -210,6 +221,7 @@ class QiscusService {
       } catch (_) {
         debugPrint('⚠️ Failed to register device token for push notifications');
       }
+      Future.delayed(const Duration(seconds: 2), forceSynchronize);
       return account;
     } catch (e) {
       debugPrint('❌ Login with token failed: $e');
