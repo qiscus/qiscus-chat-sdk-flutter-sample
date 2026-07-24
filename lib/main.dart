@@ -10,10 +10,14 @@ import 'package:qiscus_chat_flutter_sample/providers/chat_provider.dart';
 import 'package:qiscus_chat_flutter_sample/screens/splash_screen.dart';
 import 'package:qiscus_chat_flutter_sample/services/qiscus_service.dart';
 
+import 'firebase_options.dart';
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  await Firebase.initializeApp();
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
   FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
   FirebaseMessaging.onMessage.listen(_firebaseMessagingOnMessageHandler);
 
@@ -25,15 +29,48 @@ void main() async {
   runApp(const MyApp());
 }
 
-class MyApp extends StatelessWidget {
+class MyApp extends StatefulWidget {
   const MyApp({Key? key}) : super(key: key);
+
+  @override
+  State<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
+  late final ChatProvider _chatProvider;
+
+  @override
+  void initState() {
+    super.initState();
+    _chatProvider = ChatProvider();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state != AppLifecycleState.resumed) return;
+
+    debugPrint('📱 App resumed — forcing resync');
+    QiscusService.instance.forceSynchronize();
+
+    final currentRoom = _chatProvider.currentRoom;
+    if (currentRoom != null) {
+      QiscusService.instance.subscribeChatRoom(currentRoom);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => AuthProvider()),
-        ChangeNotifierProvider(create: (_) => ChatProvider()),
+        ChangeNotifierProvider.value(value: _chatProvider),
       ],
       child: MaterialApp(
         title: 'Qiscus Chat SDK Example',
