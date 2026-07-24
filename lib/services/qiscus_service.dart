@@ -29,7 +29,14 @@ class QiscusService {
 
   DateTime _lastReceivedComment = DateTime.now();
 
+  final StreamController<void> _connectedController =
+      StreamController<void>.broadcast();
+  final StreamController<void> _reconnectingController =
+      StreamController<void>.broadcast();
+
   // Streams
+  Stream<void> get onConnected => _connectedController.stream;
+  Stream<void> get onReconnecting => _reconnectingController.stream;
   Stream<QMessage> get onMessageReceived =>
       _messageReceivedController.stream.map((m) {
         var now = DateTime.now();
@@ -57,7 +64,11 @@ class QiscusService {
             'Please replace YOUR_APP_ID with your actual Qiscus App ID in qiscus_service.dart');
       }
 
-      await sdk.setup(appId);
+      await sdk.setupWithCustomServer(
+        appId,
+        syncInterval: 5000, // ms, when disconnected (default)
+        syncIntervalWhenConnected: 5000, // ms, was 30000 default
+      );
 
       // Enable debug mode for development
       // sdk.enableDebugMode(enable: true, level: QLogLevel.verbose);
@@ -119,6 +130,7 @@ class QiscusService {
     // Listen to connection status
     sdk.onConnected().listen((_) {
       debugPrint('🟢 Connected to Qiscus');
+      _connectedController.add(null);
     });
 
     sdk.onDisconnected().listen((_) {
@@ -127,6 +139,7 @@ class QiscusService {
 
     sdk.onReconnecting().listen((_) {
       debugPrint('🟡 Reconnecting to Qiscus...');
+      _reconnectingController.add(null);
     });
   }
 
@@ -715,5 +728,7 @@ class QiscusService {
     _messageDeletedController.close();
     _userTypingController.close();
     _userPresenceController.close();
+    _connectedController.close();
+    _reconnectingController.close();
   }
 }

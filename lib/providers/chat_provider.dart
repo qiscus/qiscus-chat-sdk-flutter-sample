@@ -42,6 +42,8 @@ class ChatProvider with ChangeNotifier {
   StreamSubscription? _messageDeletedSub;
   StreamSubscription? _userTypingSub;
   StreamSubscription? _userPresenceSub;
+  StreamSubscription? _connectedSub;
+  StreamSubscription? _reconnectingSub;
 
   ChatProvider() {
     _setupEventListeners();
@@ -99,6 +101,19 @@ class ChatProvider with ChangeNotifier {
     _userPresenceSub = _qiscusService.onUserPresence.listen((presence) {
       _onlineUsers[presence.userId] = presence.isOnline;
       notifyListeners();
+    });
+
+    // Re-subscribe to the active room on reconnect to close the window
+    // where room-scoped MQTT events could be missed during the drop.
+    _connectedSub = _qiscusService.onConnected.listen((_) {
+      if (_currentRoom != null) {
+        _qiscusService.subscribeChatRoom(_currentRoom!);
+      }
+    });
+    _reconnectingSub = _qiscusService.onReconnecting.listen((_) {
+      if (_currentRoom != null) {
+        _qiscusService.subscribeChatRoom(_currentRoom!);
+      }
     });
   }
 
@@ -539,6 +554,8 @@ class ChatProvider with ChangeNotifier {
     _messageDeletedSub?.cancel();
     _userTypingSub?.cancel();
     _userPresenceSub?.cancel();
+    _connectedSub?.cancel();
+    _reconnectingSub?.cancel();
     super.dispose();
   }
 }
