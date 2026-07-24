@@ -12,7 +12,7 @@ dependencies:
     sdk: flutter
   
   # Qiscus Chat SDK
-  qiscus_chat_sdk: ^2.2.1
+  qiscus_chat_sdk: ^2.2.3
   
   # State Management
   provider: ^6.0.5
