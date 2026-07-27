@@ -57,3 +57,6 @@ launch.json
 
 # Local working notes
 *.txt
+
+# Zed generated project metadata
+.zed/
