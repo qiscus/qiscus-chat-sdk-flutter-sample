@@ -1,8 +1,7 @@
 # Qiscus Chat SDK Flutter Sample
 
 A reference implementation for integrating `qiscus_chat_sdk` into a Flutter
-application. The project prioritizes an easy-to-follow core chat flow and
-provides an SDK Lab for advanced APIs.
+application. The project prioritizes an easy-to-follow core chat flow.
 
 This is a debugging and integration sample, not a drop-in production chat app.
 
@@ -63,14 +62,14 @@ release builds register production tokens.
 
 ```text
 screens
-  ├── AuthProvider / ChatProvider
-  └── FeatureGalleryProvider
-           ↓
-      QiscusGateway
-           ↓
-      QiscusService
-           ↓
-       QiscusSDK
+       ↓
+AuthProvider / ChatProvider
+       ↓
+  QiscusGateway
+       ↓
+  QiscusService
+       ↓
+   QiscusSDK
 ```
 
 - `QiscusService` owns the SDK instance and adapts SDK callbacks into broadcast
@@ -79,7 +78,6 @@ screens
   and never stores user keys or identity tokens in `SharedPreferences`.
 - `ChatProvider` owns room/message state, unread reconciliation, realtime
   subscriptions, pagination, upload progress, typing, and presence.
-- `FeatureGalleryProvider` contains advanced, explicitly invoked SDK examples.
 - `PushService` isolates optional Firebase initialization and token lifecycle.
 
 Async room work is guarded by a room-session identifier. Results from a room
@@ -104,36 +102,6 @@ stream subscriptions are cancelled during teardown.
 - Add/remove group participants
 - Reconnect, background/resume synchronization, and room resubscription
 - Optional Firebase push-token lifecycle
-
-### SDK Lab
-
-The third bottom-navigation tab demonstrates APIs that are useful but should
-not obscure the core chat flow:
-
-- JWT nonce
-- Block, unblock, and list blocked users
-- Update room metadata
-- Generate/send custom messages
-- Publish and subscribe to custom events
-- List room files
-- Force message/event synchronization
-- Open and close the realtime connection
-- Display connection and realtime-error state
-
-### API coverage policy
-
-SDK APIs are classified rather than blindly exposed as arbitrary UI controls:
-
-| Category | Examples | Location |
-| --- | --- | --- |
-| Core | setup, user session, rooms, messages, files, unread, typing, presence | Main chat flow |
-| Gallery | custom messages/events, blocking, room update, files, connection controls | SDK Lab |
-| Internal | message generation, device-token lifecycle, subscriptions, synchronization | Services/providers |
-| Recipe only | custom HTTP headers, HTTP interceptors, message interceptors, raw upload | Documentation/source comments |
-
-Low-level header/interceptor controls are intentionally not exposed as free-form
-runtime inputs because that encourages leaking credentials and creating unsafe
-global behavior.
 
 ## Verification
 
@@ -181,8 +149,8 @@ These are defensive sample workarounds, not replacements for an SDK-level fix.
   `ENABLE_FIREBASE_PUSH`.
 - **Image picker closes on iOS:** confirm Photo Library permission exists in the
   built target.
-- **Messages delayed after reconnect:** inspect connection state in SDK Lab and
-  use Force sync while investigating.
+- **Messages delayed after reconnect:** inspect SDK connection logs and trigger
+  an app resume to force synchronization while investigating.
 - **429 from `update_comment_status`:** keep read-receipt debounce enabled and
   inspect server-side request volume.
 
