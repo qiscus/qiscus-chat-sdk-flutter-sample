@@ -52,15 +52,28 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
     super.dispose();
   }
 
+  DateTime? _backgroundedAt;
+
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state != AppLifecycleState.resumed) return;
+    final now = DateTime.now();
+    debugPrint('📱 [${now.toIso8601String()}] Lifecycle state -> $state');
 
-    debugPrint('📱 App resumed — forcing resync');
+    if (state != AppLifecycleState.resumed) {
+      _backgroundedAt ??= now;
+      return;
+    }
+
+    final bgDuration =
+        _backgroundedAt != null ? now.difference(_backgroundedAt!) : null;
+    _backgroundedAt = null;
+    debugPrint(
+        '📱 App resumed${bgDuration != null ? ' after ${bgDuration.inSeconds}s in background' : ''} — forcing resync');
     QiscusService.instance.forceSynchronize();
 
     final currentRoom = _chatProvider.currentRoom;
     if (currentRoom != null) {
+      debugPrint('🔁 Resubscribing room ${currentRoom.id} on resume');
       QiscusService.instance.subscribeChatRoom(currentRoom);
     }
   }
