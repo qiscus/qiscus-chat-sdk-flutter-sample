@@ -65,3 +65,6 @@ launch.json
 .agent/
 .agents/
 .claude/
+CLAUDE.md
+AGENT.md
+agent.md
