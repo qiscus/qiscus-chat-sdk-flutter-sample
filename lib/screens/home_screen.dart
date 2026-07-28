@@ -4,7 +4,6 @@ import 'package:qiscus_chat_flutter_sample/providers/chat_provider.dart';
 import 'package:qiscus_chat_flutter_sample/screens/chat_list_screen.dart';
 import 'package:qiscus_chat_flutter_sample/screens/profile_screen.dart';
 import 'package:qiscus_chat_flutter_sample/screens/create_chat_screen.dart';
-import 'package:qiscus_chat_flutter_sample/screens/feature_gallery_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({Key? key}) : super(key: key);
@@ -19,7 +18,6 @@ class _HomeScreenState extends State<HomeScreen> {
   final List<Widget> _screens = const [
     ChatListScreen(),
     ProfileScreen(),
-    FeatureGalleryScreen(),
   ];
 
   @override
@@ -50,10 +48,6 @@ class _HomeScreenState extends State<HomeScreen> {
           BottomNavigationBarItem(
             icon: Icon(Icons.person),
             label: 'Profile',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.science),
-            label: 'SDK Lab',
           ),
         ],
       ),
