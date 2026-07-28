@@ -60,3 +60,8 @@ launch.json
 
 # Zed generated project metadata
 .zed/
+
+# Local AI agent metadata
+.agent/
+.agents/
+.claude/
