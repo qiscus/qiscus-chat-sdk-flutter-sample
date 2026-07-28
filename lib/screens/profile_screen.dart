@@ -122,10 +122,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   const SizedBox(height: 24),
                   CircleAvatar(
                     radius: 60,
-                    backgroundColor: Theme.of(context).primaryColor.withValues(alpha: 0.1),
-                    backgroundImage: user.avatarUrl != null && user.avatarUrl!.isNotEmpty
-                        ? CachedNetworkImageProvider(user.avatarUrl!)
-                        : null,
+                    backgroundColor:
+                        Theme.of(context).primaryColor.withValues(alpha: 0.1),
+                    backgroundImage:
+                        user.avatarUrl != null && user.avatarUrl!.isNotEmpty
+                            ? CachedNetworkImageProvider(user.avatarUrl!)
+                            : null,
                     child: user.avatarUrl == null || user.avatarUrl!.isEmpty
                         ? Icon(
                             Icons.person,
@@ -207,7 +209,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                   ? null
                                   : _updateProfile,
                               style: ElevatedButton.styleFrom(
-                                padding: const EdgeInsets.symmetric(vertical: 16),
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 16),
                               ),
                               child: authProvider.isLoading
                                   ? const SizedBox(

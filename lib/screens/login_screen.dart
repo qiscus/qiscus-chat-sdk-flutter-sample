@@ -17,6 +17,7 @@ class _LoginScreenState extends State<LoginScreen> {
   final _usernameController = TextEditingController(text: 'guest-2001');
   final _avatarUrlController =
       TextEditingController(text: 'https://placehold.co/200');
+  final _identityTokenController = TextEditingController();
 
   @override
   void dispose() {
@@ -24,6 +25,7 @@ class _LoginScreenState extends State<LoginScreen> {
     _userKeyController.dispose();
     _usernameController.dispose();
     _avatarUrlController.dispose();
+    _identityTokenController.dispose();
     super.dispose();
   }
 
@@ -64,6 +66,23 @@ class _LoginScreenState extends State<LoginScreen> {
         'demo-user-${DateTime.now().millisecondsSinceEpoch}';
     _userKeyController.text = 'demo-password';
     _usernameController.text = 'Demo User';
+  }
+
+  Future<void> _handleIdentityTokenLogin() async {
+    final token = _identityTokenController.text.trim();
+    if (token.isEmpty) return;
+    final authProvider = context.read<AuthProvider>();
+    final success = await authProvider.loginWithToken(token: token);
+    if (!mounted) return;
+    if (success) {
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(builder: (_) => const HomeScreen()),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(authProvider.error ?? 'Token login failed')),
+      );
+    }
   }
 
   @override
@@ -199,13 +218,31 @@ class _LoginScreenState extends State<LoginScreen> {
                 const SizedBox(height: 24),
                 const Divider(),
                 const SizedBox(height: 16),
+                ExpansionTile(
+                  title: const Text('Login with identity token'),
+                  children: [
+                    TextField(
+                      controller: _identityTokenController,
+                      decoration: const InputDecoration(
+                        labelText: 'JWT / identity token',
+                        border: OutlineInputBorder(),
+                      ),
+                      obscureText: true,
+                    ),
+                    const SizedBox(height: 8),
+                    FilledButton(
+                      onPressed: _handleIdentityTokenLogin,
+                      child: const Text('Login with token'),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
                 const Text(
-                  'Note: Replace "YOUR_APP_ID" in QiscusService with your actual Qiscus App ID',
+                  'The App ID is supplied with --dart-define=QISCUS_APP_ID.',
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontSize: 12,
                     color: Colors.grey,
-                    fontStyle: FontStyle.italic,
                   ),
                 ),
               ],

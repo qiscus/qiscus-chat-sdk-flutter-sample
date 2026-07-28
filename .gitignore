@@ -54,3 +54,17 @@ google-services.json
 firebase_app_id_file.json
 firebase.json
 launch.json
+
+# Local working notes
+*.txt
+
+# Zed generated project metadata
+.zed/
+
+# Local AI agent metadata
+.agent/
+.agents/
+.claude/
+CLAUDE.md
+AGENT.md
+agent.md

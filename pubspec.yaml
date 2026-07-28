@@ -4,44 +4,30 @@ publish_to: 'none'
 version: 1.0.0+1
 
 environment:
-  sdk: '>=2.17.0 <4.0.0'
-  flutter: ">=2.10.0"
+  sdk: '>=3.4.0 <4.0.0'
+  flutter: ">=3.22.0"
 
 dependencies:
   flutter:
     sdk: flutter
   
   # Qiscus Chat SDK
-  qiscus_chat_sdk: ^2.2.1
+  qiscus_chat_sdk: ^2.2.4
   
   # State Management
   provider: ^6.0.5
   
   # UI Components
-  cupertino_icons: ^1.0.2
   cached_network_image: ^3.2.3
   image_picker: ^1.0.4
   file_picker: ^9.0.0
   
   # Utilities
   intl: ^0.18.1
-  path_provider: ^2.1.1
-  permission_handler: ^11.0.1
-  shared_preferences: ^2.2.2
   
-  # Firebase (optional - for push notifications)
+  # Firebase (optional at runtime - enable with ENABLE_FIREBASE_PUSH)
   firebase_core: ^2.32.0
   firebase_messaging: ^14.7.9
-  
-  # Additional utilities from original
-  timeago: ^3.3.0
-  date_format: ^2.0.7
-  grouped_list: ^5.1.2
-  flutter_downloader: ^1.11.5
-  uuid: ^4.2.2
-  logger: ^2.0.2
-  visibility_detector: ^0.4.0+2
-  equatable: ^2.0.5
 
 # dependency_overrides:
 #   qiscus_chat_sdk:

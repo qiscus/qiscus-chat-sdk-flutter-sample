@@ -1,4 +1,3 @@
-import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:qiscus_chat_flutter_sample/providers/auth_provider.dart';
@@ -22,51 +21,17 @@ class _SplashScreenState extends State<SplashScreen> {
   }
 
   Future<void> _initializeAndNavigate() async {
-    // Wait minimum 2 seconds for splash screen visibility
-    await Future.delayed(const Duration(seconds: 2));
-
-    if (!mounted) return;
-
     final authProvider = context.read<AuthProvider>();
-
-    await FirebaseMessaging.instance.requestPermission(
-      sound: true,
-      alert: true,
-      badge: true,
-    );
-
-    // Wait for auth provider to finish its initialization
-    // Check periodically if login check is complete
-    int attempts = 0;
-    while (attempts < 20 && !_hasNavigated) {
-      // Max 10 seconds
-      await Future.delayed(const Duration(milliseconds: 500));
-
-      if (!mounted) return;
-
-      // Check if AuthProvider has finished loading
-      if (!authProvider.isLoading) {
-        _navigateToNextScreen(authProvider);
-        break;
-      }
-
-      attempts++;
-    }
-
-    // If still loading after timeout, navigate anyway
-    if (!_hasNavigated && mounted) {
-      debugPrint('SplashScreen: Timeout waiting for auth check, navigating...');
-      _navigateToNextScreen(authProvider);
-    }
+    await Future.wait([
+      authProvider.initialized,
+      Future<void>.delayed(const Duration(milliseconds: 700)),
+    ]);
+    if (mounted) _navigateToNextScreen(authProvider);
   }
 
   void _navigateToNextScreen(AuthProvider authProvider) {
     if (_hasNavigated) return;
     _hasNavigated = true;
-
-    debugPrint('SplashScreen: Navigating...');
-    debugPrint('SplashScreen: isLoggedIn = ${authProvider.isLoggedIn}');
-    debugPrint('SplashScreen: currentUser = ${authProvider.currentUser?.id}');
 
     Navigator.of(context).pushReplacement(
       MaterialPageRoute(

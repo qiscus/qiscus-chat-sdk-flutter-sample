@@ -1,17 +1,127 @@
 import 'dart:async';
 import 'dart:io';
-import 'package:firebase_messaging/firebase_messaging.dart';
-import 'package:flutter/rendering.dart';
+import 'package:flutter/foundation.dart';
 import 'package:qiscus_chat_sdk/qiscus_chat_sdk.dart';
 
+abstract interface class QiscusGateway {
+  QiscusSDK get sdk;
+  Stream<void> get onConnected;
+  Stream<void> get onReconnecting;
+  Stream<void> get onDisconnected;
+  Stream<QError> get onRealtimeError;
+  Stream<QMessage> get onMessageReceived;
+  Stream<QMessage> get onMessageDelivered;
+  Stream<QMessage> get onMessageRead;
+  Stream<QMessage> get onMessageDeleted;
+  Stream<QMessage> get onMessageUpdated;
+  Stream<int> get onChatRoomCleared;
+  Stream<QUserTyping> get onUserTyping;
+  Stream<QUserPresence> get onUserPresence;
+
+  Future<QAccount> loginWithCredentials({
+    required String userId,
+    required String userKey,
+    String? username,
+    String? avatarUrl,
+  });
+  Future<QAccount> loginWithToken({required String token});
+  Future<void> logout();
+  QAccount? getCurrentUser();
+  bool isLoggedIn();
+  Future<QAccount> updateProfile({
+    String? username,
+    String? avatarUrl,
+    Map<String, dynamic>? extras,
+  });
+  Future<QChatRoom> createChatRoom({
+    required String userId,
+    Map<String, dynamic>? extras,
+  });
+  Future<QChatRoom> createGroupChat({
+    required String name,
+    required List<String> userIds,
+    String? avatarUrl,
+    Map<String, dynamic>? extras,
+  });
+  Future<QChatRoom> createChannel({
+    required String uniqueId,
+    String? name,
+    String? avatarUrl,
+    Map<String, dynamic>? extras,
+  });
+  Future<List<QChatRoom>> getAllChatRooms({
+    bool? showParticipant,
+    bool? showRemoved,
+    bool? showEmpty,
+    int? limit,
+    int? page,
+  });
+  Future<QChatRoomWithMessages> getChatRoomWithMessages({
+    required int roomId,
+  });
+  Future<QMessage> sendMessage({
+    required int chatRoomId,
+    required String text,
+    Map<String, dynamic>? extras,
+  });
+  Stream<QUploadProgress<QMessage>> sendFileMessage({
+    required int chatRoomId,
+    required File file,
+    String? caption,
+  });
+  Future<QMessage> updateMessage({
+    required QMessage message,
+    required String newText,
+  });
+  Future<List<QMessage>> deleteMessages({
+    required List<String> messageUniqueIds,
+  });
+  Future<List<QMessage>> loadPreviousMessages({
+    required int roomId,
+    required int messageId,
+    int? limit,
+  });
+  Future<void> markAsRead({
+    required int roomId,
+    required int messageId,
+  });
+  void subscribeChatRoom(QChatRoom room);
+  void unsubscribeChatRoom(QChatRoom room);
+  Future<void> publishTyping({required int roomId, bool isTyping});
+  void subscribeUserOnlinePresence(String userId);
+  void unsubscribeUserOnlinePresence(String userId);
+  Future<List<QParticipant>> addParticipants({
+    required int roomId,
+    required List<String> userIds,
+  });
+  Future<List<String>> removeParticipants({
+    required int roomId,
+    required List<String> userIds,
+  });
+  Future<List<QParticipant>> getParticipants({
+    required String roomUniqueId,
+    int? page,
+    int? limit,
+  });
+  Future<int> getTotalUnreadCount();
+  Future<void> clearMessages({required List<String> roomUniqueIds});
+}
+
 /// Singleton service to manage Qiscus SDK
-class QiscusService {
+class QiscusService implements QiscusGateway {
   static final QiscusService instance = QiscusService._internal();
   factory QiscusService() => instance;
-  QiscusService._internal();
+  QiscusService._internal([QiscusSDK? sdk]) : _sdk = sdk;
 
-  QiscusSDK? _sdk;
+  @visibleForTesting
+  QiscusService.withSdk(QiscusSDK sdk) : _sdk = sdk;
+
+  final QiscusSDK? _sdk;
+  @override
   QiscusSDK get sdk => _sdk ?? QiscusSDK.instance;
+  bool _initialized = false;
+  final List<StreamSubscription<dynamic>> _sdkSubscriptions = [];
+  Timer? _postLoginSyncTimer;
 
   // Stream controllers for real-time events
   final StreamController<QMessage> _messageReceivedController =
@@ -22,6 +132,10 @@ class QiscusService {
       StreamController<QMessage>.broadcast();
   final StreamController<QMessage> _messageDeletedController =
       StreamController<QMessage>.broadcast();
+  final StreamController<QMessage> _messageUpdatedController =
+      StreamController<QMessage>.broadcast();
+  final StreamController<int> _chatRoomClearedController =
+      StreamController<int>.broadcast();
   final StreamController<QUserTyping> _userTypingController =
       StreamController<QUserTyping>.broadcast();
   final StreamController<QUserPresence> _userPresenceController =
@@ -29,7 +143,25 @@ class QiscusService {
 
   DateTime _lastReceivedComment = DateTime.now();
 
+  final StreamController<void> _connectedController =
+      StreamController<void>.broadcast();
+  final StreamController<void> _reconnectingController =
+      StreamController<void>.broadcast();
+  final StreamController<void> _disconnectedController =
+      StreamController<void>.broadcast();
+  final StreamController<QError> _realtimeErrorController =
+      StreamController<QError>.broadcast();
+
   // Streams
+  @override
+  Stream<void> get onConnected => _connectedController.stream;
+  @override
+  Stream<void> get onReconnecting => _reconnectingController.stream;
+  @override
+  Stream<void> get onDisconnected => _disconnectedController.stream;
+  @override
+  Stream<QError> get onRealtimeError => _realtimeErrorController.stream;
+  @override
   Stream<QMessage> get onMessageReceived =>
       _messageReceivedController.stream.map((m) {
         var now = DateTime.now();
@@ -39,31 +171,52 @@ class QiscusService {
             '@qiscus.received[${timestamp.inSeconds}]: id(${m.id}) chatRoomId(${m.chatRoomId}) text(${m.text})');
         return m;
       });
+  @override
   Stream<QMessage> get onMessageDelivered => _messageDeliveredController.stream;
+  @override
   Stream<QMessage> get onMessageRead => _messageReadController.stream;
+  @override
   Stream<QMessage> get onMessageDeleted => _messageDeletedController.stream;
+  @override
+  Stream<QMessage> get onMessageUpdated => _messageUpdatedController.stream;
+  @override
+  Stream<int> get onChatRoomCleared => _chatRoomClearedController.stream;
+  @override
   Stream<QUserTyping> get onUserTyping => _userTypingController.stream;
+  @override
   Stream<QUserPresence> get onUserPresence => _userPresenceController.stream;
 
   /// Initialize Qiscus SDK
-  /// Replace 'YOUR_APP_ID' with your actual Qiscus App ID
+  /// Pass your App ID via `--dart-define=QISCUS_APP_ID=your-app-id`
+  /// (never hardcode a real App ID in source, especially a client's).
   Future<void> initialize() async {
+    if (_initialized) return;
     try {
-      const appId = 'sdksample';
-      debugPrint('🚀 Initializing Qiscus SDK with APP_ID: $appId');
+      const appId = String.fromEnvironment('QISCUS_APP_ID');
 
-      if (appId == 'YOUR_APP_ID') {
+      if (appId.isEmpty) {
         throw Exception(
-            'Please replace YOUR_APP_ID with your actual Qiscus App ID in qiscus_service.dart');
+            'QISCUS_APP_ID is not set. Run with --dart-define=QISCUS_APP_ID=your-app-id');
       }
 
-      await sdk.setup(appId);
+      await sdk.setupWithCustomServer(
+        appId,
+        syncInterval: 5000, // ms, when disconnected (default)
+        syncIntervalWhenConnected: 5000, // ms, was 30000 default
+      );
 
-      // Enable debug mode for development
-      // sdk.enableDebugMode(enable: true, level: QLogLevel.verbose);
+      const debugSdk = bool.fromEnvironment(
+        'QISCUS_SDK_DEBUG',
+        defaultValue: false,
+      );
+      sdk.enableDebugMode(
+        enable: kDebugMode && debugSdk,
+        level: QLogLevel.log,
+      );
 
       // Setup event listeners
       _setupEventListeners();
+      _initialized = true;
 
       debugPrint('✅ Qiscus SDK initialized successfully');
     } on TypeError catch (e, stackTrace) {
@@ -81,56 +234,74 @@ class QiscusService {
   /// Setup event listeners for real-time updates
   void _setupEventListeners() {
     // Listen to new messages
-    sdk.onMessageReceived().listen((message) {
-      debugPrint('📨 Message received: ${message.text}');
-      _messageReceivedController.add(message);
-    });
+    _sdkSubscriptions.add(
+      sdk.onMessageReceived().listen(_messageReceivedController.add),
+    );
 
     // Listen to message delivered status
-    sdk.onMessageDelivered().listen((message) {
-      debugPrint('✓ Message delivered: ${message.id}');
-      _messageDeliveredController.add(message);
-    });
+    _sdkSubscriptions.add(
+      sdk.onMessageDelivered().listen(_messageDeliveredController.add),
+    );
 
     // Listen to message read status
-    sdk.onMessageRead().listen((message) {
-      debugPrint('✓✓ Message read: ${message.id}');
-      _messageReadController.add(message);
-    });
+    _sdkSubscriptions.add(
+      sdk.onMessageRead().listen(_messageReadController.add),
+    );
 
     // Listen to deleted messages
-    sdk.onMessageDeleted().listen((message) {
-      debugPrint('🗑️ Message deleted: ${message.id}');
-      _messageDeletedController.add(message);
-    });
+    _sdkSubscriptions.add(
+      sdk.onMessageDeleted().listen(_messageDeletedController.add),
+    );
+    _sdkSubscriptions.add(
+      sdk.onMessageUpdated().listen(_messageUpdatedController.add),
+    );
+    _sdkSubscriptions.add(
+      sdk.onChatRoomCleared().listen(_chatRoomClearedController.add),
+    );
 
     // Listen to user typing
-    sdk.onUserTyping().listen((typing) {
-      debugPrint('⌨️ User typing: ${typing.userId}');
-      _userTypingController.add(typing);
-    });
+    _sdkSubscriptions.add(
+      sdk.onUserTyping().listen(_userTypingController.add),
+    );
 
     // Listen to user presence
-    sdk.onUserOnlinePresence().listen((presence) {
-      debugPrint('👤 User presence: ${presence.userId} - ${presence.isOnline}');
-      _userPresenceController.add(presence);
-    });
+    _sdkSubscriptions.add(
+      sdk.onUserOnlinePresence().listen(_userPresenceController.add),
+    );
 
     // Listen to connection status
-    sdk.onConnected().listen((_) {
-      debugPrint('🟢 Connected to Qiscus');
-    });
+    _sdkSubscriptions.add(
+      sdk.onConnected().listen((_) => _connectedController.add(null)),
+    );
 
-    sdk.onDisconnected().listen((_) {
-      debugPrint('🔴 Disconnected from Qiscus');
-    });
+    _sdkSubscriptions.add(
+      sdk.onDisconnected().listen((_) => _disconnectedController.add(null)),
+    );
 
-    sdk.onReconnecting().listen((_) {
-      debugPrint('🟡 Reconnecting to Qiscus...');
-    });
+    _sdkSubscriptions.add(
+      sdk.onReconnecting().listen((_) => _reconnectingController.add(null)),
+    );
+
+    // New in SDK 2.2.4: surfaces realtime-layer failures (REST sync fallback
+    // errors, skipped channel registrations) that were previously swallowed
+    // silently by the SDK. See FIX_NOTES_19727.txt section 13/15.
+    _sdkSubscriptions.add(
+      sdk.onRealtimeError().listen(_realtimeErrorController.add),
+    );
+  }
+
+  /// Force a REST-based message sync, bypassing MQTT entirely.
+  /// Used as a safety net for the MQTT subscribe race on login and
+  /// for app-lifecycle resume, since a missed MQTT subscribe at login
+  /// is never retried by the SDK for the rest of the session.
+  void forceSynchronize() {
+    sdk.synchronize();
+    debugPrint(
+        '🔄 [${DateTime.now().toIso8601String()}] Forced REST synchronize');
   }
 
   /// Login user with userId and userKey
+  @override
   Future<QAccount> loginWithCredentials({
     required String userId,
     required String userKey,
@@ -155,19 +326,8 @@ class QiscusService {
         avatarUrl: avatarUrl?.trim(),
       );
 
-      try {
-        final deviceToken = await FirebaseMessaging.instance.getToken();
-        if (deviceToken != null) {
-          await sdk.registerDeviceToken(
-            token: deviceToken,
-            isDevelopment: true,
-          );
-        }
-      } catch (_) {
-        debugPrint('⚠️ Failed to register device token for push notifications');
-      }
-
       debugPrint('✅ User logged in: ${account.id}');
+      _schedulePostLoginSync();
       return account;
     } on TypeError catch (e, stackTrace) {
       debugPrint('❌ Type error during login: $e');
@@ -182,21 +342,12 @@ class QiscusService {
   }
 
   /// Login with JWT token
+  @override
   Future<QAccount> loginWithToken({required String token}) async {
     try {
       final account = await sdk.setUserWithIdentityToken(token: token);
       debugPrint('✅ User logged in with token: ${account.id}');
-      try {
-        final deviceToken = await FirebaseMessaging.instance.getToken();
-        if (deviceToken != null) {
-          await sdk.registerDeviceToken(
-            token: deviceToken,
-            isDevelopment: true,
-          );
-        }
-      } catch (_) {
-        debugPrint('⚠️ Failed to register device token for push notifications');
-      }
+      _schedulePostLoginSync();
       return account;
     } catch (e) {
       debugPrint('❌ Login with token failed: $e');
@@ -205,8 +356,10 @@ class QiscusService {
   }
 
   /// Logout current user
+  @override
   Future<void> logout() async {
     try {
+      _postLoginSyncTimer?.cancel();
       await sdk.clearUser();
       debugPrint('✅ User logged out');
     } catch (e) {
@@ -215,17 +368,27 @@ class QiscusService {
     }
   }
 
+  void _schedulePostLoginSync() {
+    _postLoginSyncTimer?.cancel();
+    _postLoginSyncTimer = Timer(const Duration(seconds: 2), () {
+      if (sdk.isLogin) forceSynchronize();
+    });
+  }
+
   /// Get current user account
+  @override
   QAccount? getCurrentUser() {
     return sdk.currentUser;
   }
 
   /// Check if user is logged in
+  @override
   bool isLoggedIn() {
     return sdk.isLogin;
   }
 
   /// Update user profile
+  @override
   Future<QAccount> updateProfile({
     String? username,
     String? avatarUrl,
@@ -246,6 +409,7 @@ class QiscusService {
   }
 
   /// Create 1-on-1 chat room
+  @override
   Future<QChatRoom> createChatRoom({
     required String userId,
     Map<String, dynamic>? extras,
@@ -282,6 +446,7 @@ class QiscusService {
   }
 
   /// Create group chat
+  @override
   Future<QChatRoom> createGroupChat({
     required String name,
     required List<String> userIds,
@@ -304,6 +469,7 @@ class QiscusService {
   }
 
   /// Create or get channel
+  @override
   Future<QChatRoom> createChannel({
     required String uniqueId,
     String? name,
@@ -326,6 +492,7 @@ class QiscusService {
   }
 
   /// Get all chat rooms
+  @override
   Future<List<QChatRoom>> getAllChatRooms({
     bool? showParticipant,
     bool? showRemoved,
@@ -350,6 +517,7 @@ class QiscusService {
   }
 
   /// Get chat room with messages
+  @override
   Future<QChatRoomWithMessages> getChatRoomWithMessages({
     required int roomId,
   }) async {
@@ -364,6 +532,7 @@ class QiscusService {
   }
 
   /// Send text message
+  @override
   Future<QMessage> sendMessage({
     required int chatRoomId,
     required String text,
@@ -385,6 +554,7 @@ class QiscusService {
   }
 
   /// Send file message
+  @override
   Stream<QUploadProgress<QMessage>> sendFileMessage({
     required int chatRoomId,
     required File file,
@@ -404,6 +574,7 @@ class QiscusService {
   }
 
   /// Update message
+  @override
   Future<QMessage> updateMessage({
     required QMessage message,
     required String newText,
@@ -432,6 +603,7 @@ class QiscusService {
   }
 
   /// Delete messages
+  @override
   Future<List<QMessage>> deleteMessages({
     required List<String> messageUniqueIds,
   }) async {
@@ -448,6 +620,7 @@ class QiscusService {
   }
 
   /// Load previous messages
+  @override
   Future<List<QMessage>> loadPreviousMessages({
     required int roomId,
     required int messageId,
@@ -500,30 +673,70 @@ class QiscusService {
   }
 
   /// Mark message as read
+  ///
+  /// Retries with backoff on 429 ("rate limiter") before giving up, since a
+  /// burst of incoming messages can still trip the server's rate limit even
+  /// after debouncing on our side (the SDK's own automatic markAsDelivered
+  /// call per message shares the same quota - see FIX_NOTES_19727.txt
+  /// section 9/22). A silent single failure here previously meant a read
+  /// receipt (and in observed cases, the underlying message sync) could be
+  /// dropped with no retry until the next unrelated trigger.
+  @override
   Future<void> markAsRead({
     required int roomId,
     required int messageId,
   }) async {
     try {
-      await sdk.markAsRead(roomId: roomId, messageId: messageId);
+      await _withRateLimitRetry(
+        () => sdk.markAsRead(roomId: roomId, messageId: messageId),
+      );
     } catch (e) {
       debugPrint('❌ Mark as read failed: $e');
+      rethrow;
+    }
+  }
+
+  bool _isRateLimitError(Object error) {
+    final message = error.toString();
+    return message.contains('429') || message.contains('rate limiter');
+  }
+
+  Future<void> _withRateLimitRetry(
+    Future<void> Function() action, {
+    int maxAttempts = 3,
+  }) async {
+    var attempt = 0;
+    while (true) {
+      try {
+        await action();
+        return;
+      } catch (e) {
+        attempt++;
+        if (!_isRateLimitError(e) || attempt >= maxAttempts) rethrow;
+        final delay = Duration(milliseconds: 500 * (1 << attempt)); // 1s, 2s
+        debugPrint(
+            '⏳ Rate limited, retrying in ${delay.inMilliseconds}ms (attempt $attempt/$maxAttempts)');
+        await Future.delayed(delay);
+      }
     }
   }
 
   /// Subscribe to chat room for real-time updates
+  @override
   void subscribeChatRoom(QChatRoom room) {
     sdk.subscribeChatRoom(room);
     debugPrint('✅ Subscribed to room: ${room.id}');
   }
 
   /// Unsubscribe from chat room
+  @override
   void unsubscribeChatRoom(QChatRoom room) {
     sdk.unsubscribeChatRoom(room);
     debugPrint('✅ Unsubscribed from room: ${room.id}');
   }
 
   /// Publish typing indicator
+  @override
   Future<void> publishTyping({
     required int roomId,
     bool isTyping = true,
@@ -545,18 +758,21 @@ class QiscusService {
   }
 
   /// Subscribe to user online presence
+  @override
   void subscribeUserOnlinePresence(String userId) {
     sdk.subscribeUserOnlinePresence(userId);
     debugPrint('✅ Subscribed to user presence: $userId');
   }
 
   /// Unsubscribe from user online presence
+  @override
   void unsubscribeUserOnlinePresence(String userId) {
     sdk.unsubscribeUserOnlinePresence(userId);
     debugPrint('✅ Unsubscribed from user presence: $userId');
   }
 
   /// Add participants to group chat
+  @override
   Future<List<QParticipant>> addParticipants({
     required int roomId,
     required List<String> userIds,
@@ -575,6 +791,7 @@ class QiscusService {
   }
 
   /// Remove participants from group chat
+  @override
   Future<List<String>> removeParticipants({
     required int roomId,
     required List<String> userIds,
@@ -593,6 +810,7 @@ class QiscusService {
   }
 
   /// Get participants
+  @override
   Future<List<QParticipant>> getParticipants({
     required String roomUniqueId,
     int? page,
@@ -613,6 +831,7 @@ class QiscusService {
   }
 
   /// Get total unread count
+  @override
   Future<int> getTotalUnreadCount() async {
     try {
       final count = await sdk.getTotalUnreadCount();
@@ -661,6 +880,7 @@ class QiscusService {
   }
 
   /// Clear messages in chat room
+  @override
   Future<void> clearMessages({required List<String> roomUniqueIds}) async {
     try {
       await sdk.clearMessagesByChatRoomId(roomUniqueIds: roomUniqueIds);
@@ -708,12 +928,23 @@ class QiscusService {
   }
 
   /// Dispose resources
-  void dispose() {
+  Future<void> dispose() async {
+    _postLoginSyncTimer?.cancel();
+    for (final subscription in _sdkSubscriptions) {
+      await subscription.cancel();
+    }
+    _sdkSubscriptions.clear();
     _messageReceivedController.close();
     _messageDeliveredController.close();
     _messageReadController.close();
     _messageDeletedController.close();
+    _messageUpdatedController.close();
+    _chatRoomClearedController.close();
     _userTypingController.close();
     _userPresenceController.close();
+    _connectedController.close();
+    _reconnectingController.close();
+    _disconnectedController.close();
+    _realtimeErrorController.close();
   }
 }
