@@ -45,6 +45,10 @@ class ChatProvider with ChangeNotifier {
   StreamSubscription? _connectedSub;
   StreamSubscription? _reconnectingSub;
   Timer? _markAsReadDebounce;
+  int? _pendingReadRoomId;
+  int? _pendingReadMessageId;
+  int _roomSession = 0;
+  int _unreadRevision = 0;
 
   ChatProvider() {
     _setupEventListeners();
@@ -54,34 +58,119 @@ class ChatProvider with ChangeNotifier {
   /// single `update_comment_status` request for the latest message,
   /// instead of one request per message (which can trigger 429s).
   void _scheduleMarkAsRead({required int roomId, required int messageId}) {
+    final wasPending = _markAsReadDebounce?.isActive ?? false;
     _markAsReadDebounce?.cancel();
+    _pendingReadRoomId = roomId;
+    _pendingReadMessageId = messageId;
+    if (wasPending) {
+      debugPrint(
+          '⏱️ markAsRead debounce reset (burst) — room=$roomId latest messageId=$messageId');
+    }
     _markAsReadDebounce = Timer(const Duration(milliseconds: 500), () {
-      _qiscusService.markAsRead(roomId: roomId, messageId: messageId);
+      unawaited(_flushPendingMarkAsRead(roomId: roomId));
     });
+  }
+
+  /// Flush the newest pending read receipt for [roomId].
+  ///
+  /// A failed receipt is retained when there is no newer pending receipt, so
+  /// it can be retried when the room is left or the connection is restored.
+  Future<void> _flushPendingMarkAsRead({int? roomId}) async {
+    final pendingRoomId = _pendingReadRoomId;
+    final pendingMessageId = _pendingReadMessageId;
+    if (pendingRoomId == null ||
+        pendingMessageId == null ||
+        (roomId != null && pendingRoomId != roomId)) {
+      return;
+    }
+
+    _markAsReadDebounce?.cancel();
+    _markAsReadDebounce = null;
+    _pendingReadRoomId = null;
+    _pendingReadMessageId = null;
+
+    debugPrint(
+        '✅ markAsRead flushing — room=$pendingRoomId messageId=$pendingMessageId');
+    final succeeded = await _markRoomAsRead(
+      roomId: pendingRoomId,
+      messageId: pendingMessageId,
+    );
+
+    if (!succeeded && _pendingReadRoomId == null) {
+      _pendingReadRoomId = pendingRoomId;
+      _pendingReadMessageId = pendingMessageId;
+    }
+  }
+
+  Future<bool> _markRoomAsRead({
+    required int roomId,
+    required int messageId,
+  }) async {
+    try {
+      await _qiscusService.markAsRead(
+        roomId: roomId,
+        messageId: messageId,
+      );
+      _commitRoomRead(roomId);
+      return true;
+    } catch (e) {
+      debugPrint(
+          '❌ Failed to mark room $roomId as read at message $messageId: $e');
+      return false;
+    }
+  }
+
+  /// Commit per-room and aggregate unread state together after the server has
+  /// accepted the read receipt.
+  void _commitRoomRead(int roomId) {
+    final roomIndex = _chatRooms.indexWhere((room) => room.id == roomId);
+    if (roomIndex == -1) {
+      // The room may be outside the loaded page. Reconcile the aggregate from
+      // the server because there is no local per-room value to subtract.
+      unawaited(_updateUnreadCount());
+      return;
+    }
+
+    final previousUnread = _chatRooms[roomIndex].unreadCount;
+    if (previousUnread == 0) return;
+
+    _chatRooms[roomIndex].unreadCount = 0;
+    final nextTotal = _unreadCount - previousUnread;
+    _unreadCount = nextTotal < 0 ? 0 : nextTotal;
+    _unreadRevision++;
+    notifyListeners();
   }
 
   /// Setup real-time event listeners
   void _setupEventListeners() {
     // Listen to new messages
     _messageReceivedSub = _qiscusService.onMessageReceived.listen((message) {
-      // set lastMessage for the room
-      var roomIndex = _chatRooms.indexWhere((r) => r.id == message.chatRoomId);
+      final isCurrentRoom =
+          _currentRoom != null && message.chatRoomId == _currentRoom!.id;
+      final roomIndex =
+          _chatRooms.indexWhere((room) => room.id == message.chatRoomId);
+
       if (roomIndex >= 0) {
-        var room = _chatRooms[roomIndex];
-        room.unreadCount += 1;
-        if (room.lastMessage?.timestamp.isBefore(message.timestamp) == true) {
+        final room = _chatRooms[roomIndex];
+        if (room.lastMessage == null ||
+            room.lastMessage!.timestamp.isBefore(message.timestamp)) {
           room.lastMessage = message;
+        }
+        if (!isCurrentRoom) {
+          room.unreadCount += 1;
         }
       }
 
-      if (_currentRoom != null && message.chatRoomId == _currentRoom!.id) {
+      if (isCurrentRoom) {
         _addMessage(message);
-        // Auto mark as read, debounced so a burst of messages (e.g. backfill
-        // after resync) only sends one request for the latest message
-        // instead of one `update_comment_status` call per message.
         _scheduleMarkAsRead(roomId: message.chatRoomId, messageId: message.id);
+      } else {
+        // The aggregate can include rooms outside the currently loaded page,
+        // so increment it even if this room is not present in _chatRooms.
+        _unreadCount += 1;
+        _unreadRevision++;
+        notifyListeners();
       }
-      _updateUnreadCount();
     });
 
     // Listen to message delivered
@@ -116,12 +205,21 @@ class ChatProvider with ChangeNotifier {
     // Re-subscribe to the active room on reconnect to close the window
     // where room-scoped MQTT events could be missed during the drop.
     _connectedSub = _qiscusService.onConnected.listen((_) {
+      debugPrint(
+          '🟢 [${DateTime.now().toIso8601String()}] ChatProvider: onConnected, currentRoom=${_currentRoom?.id}');
       if (_currentRoom != null) {
+        debugPrint('🔁 Resubscribing room ${_currentRoom!.id} after connect');
         _qiscusService.subscribeChatRoom(_currentRoom!);
       }
+      unawaited(_flushPendingMarkAsRead());
+      unawaited(_updateUnreadCount());
     });
     _reconnectingSub = _qiscusService.onReconnecting.listen((_) {
+      debugPrint(
+          '🟡 [${DateTime.now().toIso8601String()}] ChatProvider: onReconnecting, currentRoom=${_currentRoom?.id}');
       if (_currentRoom != null) {
+        debugPrint(
+            '🔁 Resubscribing room ${_currentRoom!.id} after reconnecting event');
         _qiscusService.subscribeChatRoom(_currentRoom!);
       }
     });
@@ -144,6 +242,7 @@ class ChatProvider with ChangeNotifier {
       );
 
       _chatRooms = rooms;
+      _unreadRevision++;
       _setLoading(false);
       await _updateUnreadCount();
     } catch (e) {
@@ -228,6 +327,7 @@ class ChatProvider with ChangeNotifier {
 
   /// Enter chat room
   Future<void> enterChatRoom(QChatRoom room) async {
+    final session = ++_roomSession;
     _setLoading(true);
     _error = null;
     _currentRoom = room;
@@ -239,32 +339,49 @@ class ChatProvider with ChangeNotifier {
       // Load messages
       final data =
           await _qiscusService.getChatRoomWithMessages(roomId: room.id);
+
+      if (session != _roomSession || _currentRoom?.id != room.id) {
+        return;
+      }
+
       _messages = data.messages.reversed.toList();
+      notifyListeners();
 
       // Mark last message as read
       if (_messages.isNotEmpty) {
-        await _qiscusService.markAsRead(
+        await _markRoomAsRead(
           roomId: room.id,
           messageId: _messages.last.id,
         );
       }
 
-      _setLoading(false);
+      if (session == _roomSession && _currentRoom?.id == room.id) {
+        _setLoading(false);
+      }
     } catch (e) {
-      _error = e.toString();
-      _setLoading(false);
+      if (session == _roomSession && _currentRoom?.id == room.id) {
+        _error = e.toString();
+        _setLoading(false);
+      }
     }
   }
 
   /// Leave chat room
-  void leaveChatRoom() {
-    if (_currentRoom != null) {
-      _qiscusService.unsubscribeChatRoom(_currentRoom!);
-      _currentRoom = null;
-      _messages = [];
-      _typingUsers = {};
-      Future.microtask(() => notifyListeners());
-    }
+  Future<void> leaveChatRoom() async {
+    final room = _currentRoom;
+    if (room == null) return;
+
+    _roomSession++;
+    _qiscusService.unsubscribeChatRoom(room);
+    _currentRoom = null;
+    _messages = [];
+    _typingUsers = {};
+    _isLoading = false;
+    // dispose() runs while Flutter is finalizing (and locking) the widget tree.
+    // Defer provider notification until that lifecycle phase has completed.
+    Future.microtask(notifyListeners);
+
+    await _flushPendingMarkAsRead(roomId: room.id);
   }
 
   /// Send text message
@@ -509,8 +626,14 @@ class ChatProvider with ChangeNotifier {
 
   /// Update unread count
   Future<void> _updateUnreadCount() async {
+    final revision = _unreadRevision;
     try {
-      _unreadCount = await _qiscusService.getTotalUnreadCount();
+      final count = await _qiscusService.getTotalUnreadCount();
+      if (revision != _unreadRevision) {
+        debugPrint('Skipping stale total unread response');
+        return;
+      }
+      _unreadCount = count;
       notifyListeners();
     } catch (e) {
       debugPrint('Error updating unread count: $e');
@@ -575,6 +698,8 @@ class ChatProvider with ChangeNotifier {
     _connectedSub?.cancel();
     _reconnectingSub?.cancel();
     _markAsReadDebounce?.cancel();
+    _pendingReadRoomId = null;
+    _pendingReadMessageId = null;
     super.dispose();
   }
 }

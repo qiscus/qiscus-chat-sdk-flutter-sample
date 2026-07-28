@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -51,7 +52,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
     _scrollController.dispose();
     _showScrollToBottom.dispose();
     // Use saved reference instead of context.read()
-    _chatProvider.leaveChatRoom();
+    unawaited(_chatProvider.leaveChatRoom());
     super.dispose();
   }
 
