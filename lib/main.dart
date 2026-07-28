@@ -1,36 +1,41 @@
-import 'dart:convert';
+import 'dart:async';
 
-import 'package:firebase_core/firebase_core.dart';
-import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import 'package:qiscus_chat_flutter_sample/providers/auth_provider.dart';
 import 'package:qiscus_chat_flutter_sample/providers/chat_provider.dart';
 import 'package:qiscus_chat_flutter_sample/screens/splash_screen.dart';
+import 'package:qiscus_chat_flutter_sample/services/push_service.dart';
 import 'package:qiscus_chat_flutter_sample/services/qiscus_service.dart';
-
-import 'firebase_options.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
-  FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
-  FirebaseMessaging.onMessage.listen(_firebaseMessagingOnMessageHandler);
+  final pushService = PushService();
+  Object? bootstrapError;
+  try {
+    await QiscusService.instance.initialize();
+    await pushService.initialize();
+  } catch (error) {
+    bootstrapError = error;
+  }
 
-  // Initialize Qiscus SDK
-  await QiscusService.instance.initialize();
-
-  debugPrint('Firebase initialized');
-
-  runApp(const MyApp());
+  runApp(MyApp(
+    pushService: pushService,
+    bootstrapError: bootstrapError,
+  ));
 }
 
 class MyApp extends StatefulWidget {
-  const MyApp({Key? key}) : super(key: key);
+  const MyApp({
+    super.key,
+    required this.pushService,
+    this.bootstrapError,
+  });
+
+  final PushService pushService;
+  final Object? bootstrapError;
 
   @override
   State<MyApp> createState() => _MyAppState();
@@ -38,17 +43,22 @@ class MyApp extends StatefulWidget {
 
 class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
   late final ChatProvider _chatProvider;
+  late final AuthProvider _authProvider;
 
   @override
   void initState() {
     super.initState();
     _chatProvider = ChatProvider();
+    _authProvider = AuthProvider(pushService: widget.pushService);
     WidgetsBinding.instance.addObserver(this);
   }
 
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    _chatProvider.dispose();
+    _authProvider.dispose();
+    unawaited(widget.pushService.dispose());
     super.dispose();
   }
 
@@ -61,6 +71,9 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
 
     if (state != AppLifecycleState.resumed) {
       _backgroundedAt ??= now;
+      unawaited(
+        QiscusService.instance.publishOnlinePresence(isOnline: false),
+      );
       return;
     }
 
@@ -70,6 +83,9 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
     debugPrint(
         '📱 App resumed${bgDuration != null ? ' after ${bgDuration.inSeconds}s in background' : ''} — forcing resync');
     QiscusService.instance.forceSynchronize();
+    unawaited(
+      QiscusService.instance.publishOnlinePresence(isOnline: true),
+    );
 
     final currentRoom = _chatProvider.currentRoom;
     if (currentRoom != null) {
@@ -80,9 +96,16 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
 
   @override
   Widget build(BuildContext context) {
+    if (widget.bootstrapError != null) {
+      return MaterialApp(
+        debugShowCheckedModeBanner: false,
+        home: _BootstrapErrorScreen(error: widget.bootstrapError!),
+      );
+    }
+
     return MultiProvider(
       providers: [
-        ChangeNotifierProvider(create: (_) => AuthProvider()),
+        ChangeNotifierProvider.value(value: _authProvider),
         ChangeNotifierProvider.value(value: _chatProvider),
       ],
       child: MaterialApp(
@@ -102,18 +125,45 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
   }
 }
 
-Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-  debugPrint('got background message');
+class _BootstrapErrorScreen extends StatelessWidget {
+  const _BootstrapErrorScreen({required this.error});
 
-  var payload = message.data['payload'];
-  var json = jsonDecode(payload ?? "{}") as Map<String, dynamic>;
+  final Object error;
 
-  debugPrint('data: $json');
-}
-
-void _firebaseMessagingOnMessageHandler(RemoteMessage event) {
-  debugPrint('got foreground message');
-  var payload = event.data['payload'];
-  var json = jsonDecode(payload ?? "{}") as Map<String, dynamic>;
-  debugPrint('data: $json');
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: SafeArea(
+        child: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.settings_suggest, size: 64),
+                const SizedBox(height: 16),
+                const Text(
+                  'Qiscus configuration is incomplete',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 12),
+                const SelectableText(
+                  'Run with:\n'
+                  'flutter run --dart-define=QISCUS_APP_ID=<your-app-id>',
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  error.toString(),
+                  textAlign: TextAlign.center,
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }

@@ -108,9 +108,19 @@ class ChatListScreen extends StatelessWidget {
           return RefreshIndicator(
             onRefresh: () => chatProvider.loadChatRooms(),
             child: ListView.separated(
-              itemCount: chatProvider.chatRooms.length,
+              itemCount: chatProvider.chatRooms.length +
+                  (chatProvider.hasMoreRooms ? 1 : 0),
               separatorBuilder: (context, index) => const Divider(height: 1),
               itemBuilder: (context, index) {
+                if (index == chatProvider.chatRooms.length) {
+                  WidgetsBinding.instance.addPostFrameCallback(
+                    (_) => chatProvider.loadMoreChatRooms(),
+                  );
+                  return const Padding(
+                    padding: EdgeInsets.all(16),
+                    child: Center(child: CircularProgressIndicator()),
+                  );
+                }
                 final room = chatProvider.chatRooms[index];
                 return ChatRoomTile(room: room);
               },
@@ -178,7 +188,8 @@ class ChatRoomTile extends StatelessWidget {
       title: Text(
         _getRoomName(),
         style: TextStyle(
-          fontWeight: room.unreadCount > 0 ? FontWeight.bold : FontWeight.normal,
+          fontWeight:
+              room.unreadCount > 0 ? FontWeight.bold : FontWeight.normal,
         ),
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
@@ -188,7 +199,8 @@ class ChatRoomTile extends StatelessWidget {
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
         style: TextStyle(
-          fontWeight: room.unreadCount > 0 ? FontWeight.w500 : FontWeight.normal,
+          fontWeight:
+              room.unreadCount > 0 ? FontWeight.w500 : FontWeight.normal,
         ),
       ),
       trailing: Column(

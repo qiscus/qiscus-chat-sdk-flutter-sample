@@ -75,6 +75,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
     if (text.isEmpty) return;
 
     _messageController.clear();
+    context.read<ChatProvider>().handleTypingInput('');
     await context.read<ChatProvider>().sendMessage(text);
   }
 
@@ -275,6 +276,8 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                         return MessageBubble(
                           message: message,
                           isMe: isMe,
+                          onLongPress:
+                              isMe ? () => _showMessageActions(message) : null,
                         );
                       },
                     );
@@ -334,14 +337,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
               maxLines: null,
               textInputAction: TextInputAction.send,
               onSubmitted: (_) => _sendMessage(),
-              onChanged: (text) {
-                // Publish typing indicator
-                if (text.isNotEmpty) {
-                  context.read<ChatProvider>().publishTyping(true);
-                } else {
-                  context.read<ChatProvider>().publishTyping(false);
-                }
-              },
+              onChanged: context.read<ChatProvider>().handleTypingInput,
             ),
           ),
           IconButton(
@@ -373,6 +369,30 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
               ),
             ),
             const Divider(height: 1),
+            if (widget.room.type == QRoomType.group)
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+                child: Row(
+                  children: [
+                    TextButton.icon(
+                      onPressed: () {
+                        Navigator.pop(context);
+                        _changeParticipant(add: true);
+                      },
+                      icon: const Icon(Icons.person_add),
+                      label: const Text('Add'),
+                    ),
+                    TextButton.icon(
+                      onPressed: () {
+                        Navigator.pop(context);
+                        _changeParticipant(add: false);
+                      },
+                      icon: const Icon(Icons.person_remove),
+                      label: const Text('Remove'),
+                    ),
+                  ],
+                ),
+              ),
             ListView.builder(
               shrinkWrap: true,
               itemCount: participants.length,
@@ -384,7 +404,11 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                         ? CachedNetworkImageProvider(participant.avatarUrl!)
                         : null,
                     child: participant.avatarUrl == null
-                        ? Text(participant.name[0].toUpperCase())
+                        ? Text(
+                            participant.name.isEmpty
+                                ? '?'
+                                : participant.name[0].toUpperCase(),
+                          )
                         : null,
                   ),
                   title: Text(participant.name),
@@ -397,16 +421,106 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
       ),
     );
   }
+
+  Future<void> _changeParticipant({required bool add}) async {
+    final controller = TextEditingController();
+    final userId = await showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('${add ? 'Add' : 'Remove'} participant'),
+        content: TextField(
+          controller: controller,
+          decoration: const InputDecoration(labelText: 'User ID'),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, controller.text.trim()),
+            child: Text(add ? 'Add' : 'Remove'),
+          ),
+        ],
+      ),
+    );
+    controller.dispose();
+    if (!mounted || userId == null || userId.isEmpty) return;
+    final provider = context.read<ChatProvider>();
+    final success = add
+        ? await provider.addParticipants([userId])
+        : await provider.removeParticipants([userId]);
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(success
+            ? 'Participant ${add ? 'added' : 'removed'}'
+            : provider.error ?? 'Participant update failed'),
+      ),
+    );
+  }
+
+  Future<void> _showMessageActions(QMessage message) async {
+    final action = await showModalBottomSheet<String>(
+      context: context,
+      builder: (context) => SafeArea(
+        child: Wrap(
+          children: [
+            ListTile(
+              leading: const Icon(Icons.edit),
+              title: const Text('Edit message'),
+              onTap: () => Navigator.pop(context, 'edit'),
+            ),
+            ListTile(
+              leading: const Icon(Icons.delete),
+              title: const Text('Delete message'),
+              onTap: () => Navigator.pop(context, 'delete'),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (!mounted || action == null) return;
+    if (action == 'delete') {
+      await context.read<ChatProvider>().deleteMessages([message.uniqueId]);
+      return;
+    }
+
+    final controller = TextEditingController(text: message.text);
+    final text = await showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Edit message'),
+        content: TextField(controller: controller, autofocus: true),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, controller.text.trim()),
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    );
+    controller.dispose();
+    if (mounted && text != null && text.isNotEmpty) {
+      await context.read<ChatProvider>().updateMessage(message, text);
+    }
+  }
 }
 
 class MessageBubble extends StatelessWidget {
   final QMessage message;
   final bool isMe;
+  final VoidCallback? onLongPress;
 
   const MessageBubble({
     Key? key,
     required this.message,
     required this.isMe,
+    this.onLongPress,
   }) : super(key: key);
 
   String _formatTime(DateTime time) {
@@ -437,117 +551,123 @@ class MessageBubble extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4.0),
-      child: Row(
-        mainAxisAlignment:
-            isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
-        crossAxisAlignment: CrossAxisAlignment.end,
-        children: [
-          if (!isMe) ...[
-            CircleAvatar(
-              radius: 16,
-              backgroundImage: message.sender.avatarUrl != null
-                  ? CachedNetworkImageProvider(message.sender.avatarUrl!)
-                  : null,
-              child: message.sender.avatarUrl == null
-                  ? Text(
-                      message.sender.name[0].toUpperCase(),
-                      style: const TextStyle(fontSize: 12),
-                    )
-                  : null,
-            ),
-            const SizedBox(width: 8),
-          ],
-          Flexible(
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              decoration: BoxDecoration(
-                color: isMe ? Theme.of(context).primaryColor : Colors.grey[300],
-                borderRadius: BorderRadius.circular(16),
+    return GestureDetector(
+      onLongPress: onLongPress,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 4.0),
+        child: Row(
+          mainAxisAlignment:
+              isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            if (!isMe) ...[
+              CircleAvatar(
+                radius: 16,
+                backgroundImage: message.sender.avatarUrl != null
+                    ? CachedNetworkImageProvider(message.sender.avatarUrl!)
+                    : null,
+                child: message.sender.avatarUrl == null
+                    ? Text(
+                        message.sender.name[0].toUpperCase(),
+                        style: const TextStyle(fontSize: 12),
+                      )
+                    : null,
               ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  if (!isMe)
-                    Text(
-                      message.sender.name,
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
-                        color: isMe ? Colors.white70 : Colors.black54,
-                      ),
-                    ),
-                  _buildMessageContent(context),
-                  const SizedBox(height: 4),
-                  // Show upload progress if uploading
-                  Consumer<ChatProvider>(
-                    builder: (context, chatProvider, _) {
-                      final progress =
-                          chatProvider.getUploadProgress(message.uniqueId);
-                      if (progress > 0 && progress < 100) {
-                        return Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const SizedBox(height: 4),
-                            Row(
-                              children: [
-                                SizedBox(
-                                  width: 12,
-                                  height: 12,
-                                  child: CircularProgressIndicator(
-                                    value: progress / 100,
-                                    strokeWidth: 2,
-                                    valueColor: AlwaysStoppedAnimation<Color>(
-                                      isMe ? Colors.white70 : Colors.blue,
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(width: 6),
-                                Text(
-                                  'Uploading $progress%',
-                                  style: TextStyle(
-                                    fontSize: 10,
-                                    color:
-                                        isMe ? Colors.white70 : Colors.black54,
-                                    fontStyle: FontStyle.italic,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 4),
-                          ],
-                        );
-                      }
-                      return const SizedBox.shrink();
-                    },
-                  ),
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
+              const SizedBox(width: 8),
+            ],
+            Flexible(
+              child: Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                decoration: BoxDecoration(
+                  color:
+                      isMe ? Theme.of(context).primaryColor : Colors.grey[300],
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (!isMe)
                       Text(
-                        _formatTime(message.timestamp),
+                        message.sender.name,
                         style: TextStyle(
-                          fontSize: 10,
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
                           color: isMe ? Colors.white70 : Colors.black54,
                         ),
                       ),
-                      if (isMe) ...[
-                        const SizedBox(width: 4),
-                        Icon(
-                          _getStatusIcon(),
-                          size: 14,
-                          color: _getStatusColor(),
+                    _buildMessageContent(context),
+                    const SizedBox(height: 4),
+                    // Show upload progress if uploading
+                    Consumer<ChatProvider>(
+                      builder: (context, chatProvider, _) {
+                        final progress =
+                            chatProvider.getUploadProgress(message.uniqueId);
+                        if (progress > 0 && progress < 100) {
+                          return Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const SizedBox(height: 4),
+                              Row(
+                                children: [
+                                  SizedBox(
+                                    width: 12,
+                                    height: 12,
+                                    child: CircularProgressIndicator(
+                                      value: progress / 100,
+                                      strokeWidth: 2,
+                                      valueColor: AlwaysStoppedAnimation<Color>(
+                                        isMe ? Colors.white70 : Colors.blue,
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 6),
+                                  Text(
+                                    'Uploading $progress%',
+                                    style: TextStyle(
+                                      fontSize: 10,
+                                      color: isMe
+                                          ? Colors.white70
+                                          : Colors.black54,
+                                      fontStyle: FontStyle.italic,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 4),
+                            ],
+                          );
+                        }
+                        return const SizedBox.shrink();
+                      },
+                    ),
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          _formatTime(message.timestamp),
+                          style: TextStyle(
+                            fontSize: 10,
+                            color: isMe ? Colors.white70 : Colors.black54,
+                          ),
                         ),
+                        if (isMe) ...[
+                          const SizedBox(width: 4),
+                          Icon(
+                            _getStatusIcon(),
+                            size: 14,
+                            color: _getStatusColor(),
+                          ),
+                        ],
                       ],
-                    ],
-                  ),
-                ],
+                    ),
+                  ],
+                ),
               ),
             ),
-          ),
-          if (isMe) const SizedBox(width: 48),
-        ],
+            if (isMe) const SizedBox(width: 48),
+          ],
+        ),
       ),
     );
   }
