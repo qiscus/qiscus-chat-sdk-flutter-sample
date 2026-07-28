@@ -130,17 +130,28 @@ class QiscusService {
 
     // Listen to connection status
     sdk.onConnected().listen((_) {
-      debugPrint('🟢 Connected to Qiscus');
+      debugPrint(
+          '🟢 [${DateTime.now().toIso8601String()}] Connected to Qiscus');
       _connectedController.add(null);
     });
 
     sdk.onDisconnected().listen((_) {
-      debugPrint('🔴 Disconnected from Qiscus');
+      debugPrint(
+          '🔴 [${DateTime.now().toIso8601String()}] Disconnected from Qiscus');
     });
 
     sdk.onReconnecting().listen((_) {
-      debugPrint('🟡 Reconnecting to Qiscus...');
+      debugPrint(
+          '🟡 [${DateTime.now().toIso8601String()}] Reconnecting to Qiscus...');
       _reconnectingController.add(null);
+    });
+
+    // New in SDK 2.2.4: surfaces realtime-layer failures (REST sync fallback
+    // errors, skipped channel registrations) that were previously swallowed
+    // silently by the SDK. See FIX_NOTES_19727.txt section 13/15.
+    sdk.onRealtimeError().listen((error) {
+      debugPrint(
+          '🚨 [${DateTime.now().toIso8601String()}] Realtime error: ${error.message}');
     });
   }
 
@@ -150,7 +161,8 @@ class QiscusService {
   /// is never retried by the SDK for the rest of the session.
   void forceSynchronize() {
     sdk.synchronize();
-    debugPrint('🔄 Forced REST synchronize');
+    debugPrint(
+        '🔄 [${DateTime.now().toIso8601String()}] Forced REST synchronize');
   }
 
   /// Login user with userId and userKey
@@ -525,14 +537,50 @@ class QiscusService {
   }
 
   /// Mark message as read
+  ///
+  /// Retries with backoff on 429 ("rate limiter") before giving up, since a
+  /// burst of incoming messages can still trip the server's rate limit even
+  /// after debouncing on our side (the SDK's own automatic markAsDelivered
+  /// call per message shares the same quota - see FIX_NOTES_19727.txt
+  /// section 9/22). A silent single failure here previously meant a read
+  /// receipt (and in observed cases, the underlying message sync) could be
+  /// dropped with no retry until the next unrelated trigger.
   Future<void> markAsRead({
     required int roomId,
     required int messageId,
   }) async {
     try {
-      await sdk.markAsRead(roomId: roomId, messageId: messageId);
+      await _withRateLimitRetry(
+        () => sdk.markAsRead(roomId: roomId, messageId: messageId),
+      );
     } catch (e) {
       debugPrint('❌ Mark as read failed: $e');
+      rethrow;
+    }
+  }
+
+  bool _isRateLimitError(Object error) {
+    final message = error.toString();
+    return message.contains('429') || message.contains('rate limiter');
+  }
+
+  Future<void> _withRateLimitRetry(
+    Future<void> Function() action, {
+    int maxAttempts = 3,
+  }) async {
+    var attempt = 0;
+    while (true) {
+      try {
+        await action();
+        return;
+      } catch (e) {
+        attempt++;
+        if (!_isRateLimitError(e) || attempt >= maxAttempts) rethrow;
+        final delay = Duration(milliseconds: 500 * (1 << attempt)); // 1s, 2s
+        debugPrint(
+            '⏳ Rate limited, retrying in ${delay.inMilliseconds}ms (attempt $attempt/$maxAttempts)');
+        await Future.delayed(delay);
+      }
     }
   }
 
